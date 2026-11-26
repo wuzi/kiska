@@ -31,7 +31,7 @@ Open [the creator workspace](http://localhost:8080/app), register, open the veri
 
 ## Deploy on one VPS
 
-1. Keep the generated `.env` private. Set `PUBLIC_ORIGIN` to the external HTTPS origin, such as `https://usekiska.com`, without a trailing slash. Discord previews use this origin for canonical links and images. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` and the relay credentials. Reserve `/kiska-media/` on the public origin. Set account `SUPPORT_URL` and `POLICY_URL` if desired.
+1. Keep the generated `.env` private. Set `PUBLIC_ORIGIN` to the external HTTPS origin, such as `https://app.usekiska.com`, without a trailing slash. Discord previews use this origin for canonical links and images. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` and the relay credentials. Reserve `/kiska-media/` on the public origin. Set account `SUPPORT_URL` and `POLICY_URL` if desired.
 2. Provide an HTTPS reverse proxy that preserves the incoming Host, path and query string. Forward all requests to the loopback port selected by `HTTP_PORT`. The bundled Nginx gateway routes signed reads to S3 and all other application requests to Axum. It restricts exposed S3 methods and paths and sets `Cache-Control: private, no-store`. Configure your outer proxy or CDN to honor this policy. Database, S3 write access, SMTP sink and SeaweedFS management interfaces stay on Docker networks in the production configuration.
 3. Set a stable proxy network and trusted addresses if `10.201.91.0/24` overlaps an existing network. `PROXY_SUBNET`, `PROXY_IP` (bundled gateway) and `HTTPS_PROXY_IP` (outer proxy peer as seen by that gateway) must match the installation. The outer proxy must overwrite the client-address header using the real connection address. Keep `IP_HASH_KEY` stable for existing abuse signals.
 4. Run the production Compose file. Migrations run once before the app and worker start. The worker delivers the durable email queue and removes expired staging and deleted objects. Both processes use the same image. The first build downloads and compiles locked dependencies.
@@ -45,10 +45,12 @@ Open [the creator workspace](http://localhost:8080/app), register, open the veri
 
 For an existing installation, keep its Compose project name, PostgreSQL role and database, and S3 bucket. Set `COMPOSE_PROJECT_NAME`, `POSTGRES_USER`, `POSTGRES_DB`, and `S3_BUCKET` in its private `.env` before applying the rebrand. This reconnects the services to their existing volumes and media.
 
+The hosted installation serves the static homepage from [landing](landing) at `usekiska.com`. Copy its contents to `/var/www/kiska-landing`. The [host Nginx configuration](ops/proxy/marketing-site.conf) serves the homepage, redirects existing board links, and forwards `app.usekiska.com` to the Compose gateway.
+
 With Caddy on the host, the following site block terminates TLS. Replace the hostname and port with your values.
 
 ```caddyfile
-usekiska.com {
+app.usekiska.com {
     reverse_proxy 127.0.0.1:8080 {
         header_up Host {http.request.hostport}
         header_up X-Forwarded-For {remote_host}
