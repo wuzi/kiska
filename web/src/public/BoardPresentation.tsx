@@ -8,8 +8,6 @@ import {
   type InfiniteData,
 } from "@tanstack/react-query";
 import {
-  PanelsTopLeft,
-  ChevronDown,
   ArrowUpRight,
   UserRound,
   Bell,
@@ -22,7 +20,6 @@ import {
   LayoutList,
   X,
 } from "lucide-react";
-import { Button } from "../ui/button";
 import { ApiError } from "../api/client";
 import { PublicBoardContext } from "./context";
 import { liveAdapter } from "./adapter";
@@ -41,8 +38,9 @@ import {
   type Sort,
   type View,
 } from "./types";
-import { theme, safeLink, ErrorBox, PagedList, SelectLabel } from "./ui";
+import { theme, safeLink, ErrorBox, PagedList } from "./ui";
 import { PostCard, Roadmap, Updates, Empty, eligibleStatuses } from "./views";
+import { FilterMenu, ActiveFilters, sortOptions } from "./FilterMenu";
 import { PostDetail } from "./PostDetail";
 import { GuestProfile, Subscribe } from "./dialogs";
 import PostComposer from "./composer/PostComposer";
@@ -53,6 +51,7 @@ interface Props {
   locale?: Locale;
   preview?: boolean;
 }
+const SEARCH_DEBOUNCE_MS = 80;
 export function BoardPresentation(props: Props) {
   return (
     <ScopedBoard key={props.data.board.id + "-" + !!props.preview} {...props} />
@@ -98,7 +97,6 @@ function ScopedBoard({ data, locale, preview = false }: Props) {
     </QueryClientProvider>
   );
 }
-const sorts: Sort[] = ["trending", "top", "new", "manual"];
 function filtersFrom(data: BoardData, preview: boolean): Filters {
   const params = preview
     ? new URLSearchParams()
@@ -114,10 +112,10 @@ function filtersFrom(data: BoardData, preview: boolean): Filters {
   const sort = params.get("sort") as Sort;
   return {
     view,
-    sort: sorts.includes(sort) ? sort : s.sort || "trending",
+    sort: sortOptions.includes(sort) ? sort : s.sort || "trending",
     q: params.get("q") || "",
-    status: params.get("status") || "",
-    tag: params.get("tag") || "",
+    status: [...new Set(params.get("status")?.split(",").filter(Boolean))],
+    tag: [...new Set(params.get("tag")?.split(",").filter(Boolean))],
   };
 }
 function postInUrl() {
@@ -135,7 +133,8 @@ function saveToUrl(
 ) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(filters))
-    if (value) params.set(key, value);
+    if (value.length)
+      params.set(key, Array.isArray(value) ? value.join(",") : value);
   history[replace ? "replaceState" : "pushState"](
     { pbBoard: board.id },
     "",
@@ -184,7 +183,12 @@ function BoardApp({
   const t = useMemo(() => translator(locale), [locale]);
   const startFilters = useMemo(() => filtersFrom(initial, preview), []);
   const [filters, setFilters] = useState(startFilters);
-  const [search, setSearch] = useState(filters.q);
+  const [showSearch, setShowSearch] = useState(!!filters.q);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchToggle = useRef<HTMLButtonElement>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(searchTimer.current), []);
+
   const [details, setDetails] = useState<Post | null>(() => {
     if (preview) return null;
     const id = postInUrl();
@@ -215,22 +219,32 @@ function BoardApp({
   }, []);
   const bootLocale = useRef(locale).current;
   const feed = useInfiniteQuery({
-    queryKey: ["board", locale, filters],
+    queryKey: ["board", locale, filters] as const,
     initialPageParam: "",
     queryFn: async ({ pageParam, signal }) => {
       if (filters.view === "updates" && pageParam) {
         const page = await adapter.updates(locale, pageParam, signal);
         return {
           ...initial,
+          filters,
           posts: [],
           updates: page.updates,
           updates_next_cursor: page.next_cursor,
         };
       }
-      return adapter.board(filters, locale, pageParam, signal);
+      // Roadmap columns must keep using the query that produced their first page.
+      return {
+        ...(await adapter.board(filters, locale, pageParam, signal)),
+        filters,
+      };
     },
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[1] === locale &&
+      previousQuery.queryKey[2].view === filters.view
+        ? previous
+        : undefined,
     ...(filters === startFilters && locale === bootLocale
-      ? { initialData: { pages: [initial], pageParams: [""] } }
+      ? { initialData: { pages: [{ ...initial, filters }], pageParams: [""] } }
       : {}),
     getNextPageParam: (p) => {
       const cursor =
@@ -249,29 +263,50 @@ function BoardApp({
       }
     : page;
   const rows = pages.flatMap((p) => p.posts);
+  const hasSelections = filters.tag.length > 0 || filters.status.length > 0;
+  const filtered = hasSelections || !!filters.q;
   const board = data.board;
   const settings = board.settings ?? {};
   const refresh = useCallback(() => client.invalidateQueries(), [client]);
   const updateFilters = useCallback(
     (value: Partial<Filters>, replace = false) => {
-      const next = { ...filters, ...value };
+      clearTimeout(searchTimer.current);
+      const next = {
+        ...filters,
+        q: searchInput.current?.value ?? filters.q,
+        ...value,
+      };
+      if (searchInput.current && searchInput.current.value !== next.q)
+        searchInput.current.value = next.q;
       setFilters(next);
       if (!preview) saveToUrl(board, next, replace);
     },
     [filters, preview, board],
   );
-  useEffect(() => {
-    if (search === filters.q) return;
-    const timer = setTimeout(() => updateFilters({ q: search }, true), 220);
-    return () => clearTimeout(timer);
-  }, [search, filters.q, updateFilters]);
+  function searchChanged(q: string) {
+    clearTimeout(searchTimer.current);
+    if (q === filters.q) return;
+    if (!q) updateFilters({ q }, true);
+    else
+      searchTimer.current = setTimeout(
+        () => updateFilters({ q }, true),
+        SEARCH_DEBOUNCE_MS,
+      );
+  }
+  function flushSearch() {
+    const draft = searchInput.current?.value;
+    if (draft !== undefined && draft !== filters.q)
+      updateFilters({ q: draft }, true);
+  }
   useEffect(() => {
     if (preview) return;
     const onPop = () => {
       const id = postInUrl();
       const next = filtersFrom(initial, false);
       setFilters(next);
-      setSearch(next.q);
+      clearTimeout(searchTimer.current);
+      if (searchInput.current) searchInput.current.value = next.q;
+      if (next.q) setShowSearch(true);
       setComposer(null);
       setPanel(null);
       setDetails(
@@ -290,7 +325,7 @@ function BoardApp({
     const fragment = new URLSearchParams(location.hash.slice(1));
     const recovery = fragment.get("recover") || fragment.get("token");
     if (recovery) {
-      if (!initial.role) {
+      if (!initial.authenticated) {
         setToken(recovery);
         setPanel("guest");
       }
@@ -300,9 +335,10 @@ function BoardApp({
         location.pathname + location.search,
       );
     }
-  }, [preview, initial.role]);
+  }, [preview, initial.authenticated]);
   function openPost(p: Post) {
     trigger.current = document.activeElement as HTMLElement;
+    flushSearch();
     if (!preview)
       history.pushState(
         { pbDetail: true, board: board.id },
@@ -464,6 +500,7 @@ function BoardApp({
     >
       <div
         ref={setRoot}
+        data-view={filters.view}
         className={
           "pb-board" +
           (preview ? " pb-preview" : "") +
@@ -472,70 +509,11 @@ function BoardApp({
         style={theme(board.appearance)}
         lang={locale === "pt" ? "pt-BR" : "en"}
       >
-        <div className="pb-top">
-          <div className="pb-top-inner">
-            <span className="pb-wordmark">
-              <span className="pb-brand-mark">
-                <PanelsTopLeft size={18} strokeWidth={2.25} />
-              </span>
-              PatchBoard
-            </span>
-            <div className="pb-top-actions">
-              <button
-                aria-label={t("language")}
-                title={t("language")}
-                className="pb-language"
-                onClick={changeLocale}
-              >
-                <Languages size={16} />
-                {locale === "pt" ? "PT" : "EN"}
-              </button>
-              <button
-                className="pb-icon"
-                aria-label={t("subscribe")}
-                title={t("subscribe")}
-                onClick={() => setPanel("subscribe")}
-              >
-                <Bell size={18} />
-              </button>
-              {data.role && !preview ? (
-                <a
-                  className="pb-profile"
-                  href="/app/account"
-                  aria-label={t("account")}
-                  title={t("account")}
-                >
-                  <UserRound size={18} />
-                </a>
-              ) : (
-                <button
-                  className="pb-profile"
-                  aria-label={t("profile")}
-                  title={t("profile")}
-                  onClick={() => setPanel("guest")}
-                >
-                  <UserRound size={18} />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
         <div className="pb-container">
           <header className="pb-hero">
-            <div
-              className={"pb-cover" + (cover ? " pb-has-cover" : "")}
-              aria-hidden="true"
-            >
-              {cover && <img src={cover} alt="" />}
-            </div>
+            {cover && <img className="pb-cover" src={cover} alt="" />}
             <div className="pb-hero-body">
-              <div className="pb-logo">
-                {logo ? (
-                  <img src={logo} alt="" />
-                ) : (
-                  <PanelsTopLeft strokeWidth={1.65} />
-                )}
-              </div>
+              {logo && <img className="pb-logo" src={logo} alt="" />}
               <div className="pb-hero-title">
                 <h1>{board.title}</h1>
                 {board.description && <p>{board.description}</p>}
@@ -544,6 +522,8 @@ function BoardApp({
                 <div className="pb-board-links">
                   <button
                     aria-label={t("link")}
+                    aria-expanded={showLinks}
+                    title={t("link")}
                     className="pb-icon pb-links-toggle"
                     onClick={() => setShowLinks(!showLinks)}
                   >
@@ -570,6 +550,7 @@ function BoardApp({
               {views.map(([v, Icon]) => (
                 <button
                   key={v}
+                  data-view-heading={filters.view === v ? "" : undefined}
                   aria-current={filters.view === v ? "page" : undefined}
                   onClick={() => updateFilters({ view: v })}
                 >
@@ -578,76 +559,110 @@ function BoardApp({
                 </button>
               ))}
             </nav>
-            {status.length > 0 && (
-              <Button className="pb-submit" onClick={() => openComposer()}>
-                <Plus size={17} />
-                {settings.button_text || t("newPost")}
-              </Button>
-            )}
-          </div>
-          <main className="pb-content">
-            <div className="pb-section-head">
-              <h2 data-view-heading tabIndex={-1}>
-                {t(filters.view === "list" ? "allFeedback" : filters.view)}
-              </h2>
-              {filters.view === "updates" && (
+            <div className="pb-board-actions">
+              {filters.view !== "updates" && (
+                <>
+                  <button
+                    className="pb-icon"
+                    ref={searchToggle}
+                    aria-label={t("search")}
+                    title={t("search")}
+                    aria-expanded={showSearch}
+                    data-active={!!filters.q}
+                    onClick={() => {
+                      if (showSearch) flushSearch();
+                      setShowSearch(!showSearch);
+                      if (!showSearch)
+                        requestAnimationFrame(() =>
+                          searchInput.current?.focus(),
+                        );
+                    }}
+                  >
+                    <Search size={17} />
+                  </button>
+                  <FilterMenu filters={filters} update={updateFilters} />
+                </>
+              )}
+              {status.length > 0 && (
                 <button
-                  className="pb-neutral"
-                  onClick={() => setPanel("subscribe")}
+                  className="pb-icon"
+                  aria-label={settings.button_text || t("newPost")}
+                  title={settings.button_text || t("newPost")}
+                  onClick={() => openComposer()}
                 >
-                  <Bell size={15} />
-                  {t("subscribe")}
+                  <Plus size={18} />
+                </button>
+              )}
+              <button
+                aria-label={t("language")}
+                title={t("language")}
+                className="pb-language"
+                onClick={changeLocale}
+              >
+                <Languages size={16} />
+                {locale === "pt" ? "PT" : "EN"}
+              </button>
+              <button
+                className="pb-icon"
+                aria-label={t("subscribe")}
+                title={t("subscribe")}
+                onClick={() => setPanel("subscribe")}
+              >
+                <Bell size={18} />
+              </button>
+              {data.authenticated && !preview ? (
+                <a
+                  className="pb-icon"
+                  href="/app/account"
+                  aria-label={t("account")}
+                  title={t("account")}
+                >
+                  <UserRound size={18} />
+                </a>
+              ) : (
+                <button
+                  className="pb-icon"
+                  aria-label={t("profile")}
+                  title={t("profile")}
+                  onClick={() => setPanel("guest")}
+                >
+                  <UserRound size={18} />
                 </button>
               )}
             </div>
-            {filters.view !== "updates" && (
+          </div>
+          <main
+            className="pb-content"
+            aria-busy={feed.isPlaceholderData}
+            aria-label={t(
+              filters.view === "list" ? "allFeedback" : filters.view,
+            )}
+          >
+            {filters.view !== "updates" && showSearch && (
               <div className="pb-toolbar">
                 <label className="pb-search">
                   <Search size={17} />
                   <input
+                    ref={searchInput}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        flushSearch();
+                        setShowSearch(false);
+                        searchToggle.current?.focus();
+                      }
+                    }}
                     type="search"
-                    value={search}
+                    defaultValue={filters.q}
                     aria-label={t("search")}
                     placeholder={t("search")}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => searchChanged(e.currentTarget.value)}
                   />
                 </label>
-                <SelectLabel
-                  label={t("status")}
-                  empty={t("allStatuses")}
-                  items={data.statuses}
-                  value={filters.status}
-                  onChange={(status) => updateFilters({ status })}
-                />
-                {settings.board_fields?.tag !== false &&
-                  data.tags.length > 0 && (
-                    <SelectLabel
-                      label={t("tag")}
-                      empty={t("allTags")}
-                      items={data.tags}
-                      value={filters.tag}
-                      onChange={(tag) => updateFilters({ tag })}
-                    />
-                  )}
-                {filters.view === "list" && (
-                  <label className="pb-select pb-sort">
-                    <span className="pb-sr">{t("sort")}</span>
-                    <select
-                      value={filters.sort}
-                      onChange={(e) =>
-                        updateFilters({ sort: e.target.value as Sort })
-                      }
-                    >
-                      {sorts.map((sort) => (
-                        <option key={sort} value={sort}>
-                          {t(sort)}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown size={14} />
-                  </label>
-                )}
               </div>
+            )}
+            {filters.view !== "updates" && (
+              <ActiveFilters filters={filters} update={updateFilters} />
             )}
             {feed.error && (
               <>
@@ -664,10 +679,10 @@ function BoardApp({
               <p className="pb-help" role="status">
                 {t("loading")}
               </p>
-            ) : filters.view === "updates" ? (
+            ) : !feed.data ? null : filters.view === "updates" ? (
               <Updates rows={pages.flatMap((p) => p.updates ?? [])} />
             ) : filters.view === "roadmap" ? (
-              <Roadmap data={data} filters={filters} />
+              <Roadmap data={data} filters={feed.data.pages[0].filters} />
             ) : rows.length ? (
               <PagedList
                 label={t("feedback")}
@@ -678,24 +693,15 @@ function BoardApp({
             ) : (
               <>
                 <Empty
-                  title={t(
-                    filters.q || filters.tag || filters.status
-                      ? "searchEmpty"
-                      : "emptyBoard",
-                  )}
-                  detail={t(
-                    filters.q || filters.tag || filters.status
-                      ? "emptySearch"
-                      : "emptyHelp",
-                  )}
+                  title={t(filtered ? "searchEmpty" : "emptyBoard")}
+                  detail={t(filtered ? "emptySearch" : "emptyHelp")}
                 />
-                {(filters.q || filters.tag || filters.status) && (
+                {filters.q && !hasSelections && (
                   <button
                     className="pb-more"
-                    onClick={() => {
-                      setSearch("");
-                      updateFilters({ q: "", tag: "", status: "" });
-                    }}
+                    onClick={() =>
+                      updateFilters({ q: "", tag: [], status: [] })
+                    }
                   >
                     {t("clear")}
                   </button>
@@ -705,7 +711,7 @@ function BoardApp({
             {filters.view !== "roadmap" && feed.hasNextPage && (
               <button
                 className="pb-more"
-                disabled={feed.isFetchingNextPage}
+                disabled={feed.isPlaceholderData || feed.isFetchingNextPage}
                 onClick={() => void feed.fetchNextPage()}
               >
                 {t("loadMore")}
@@ -729,7 +735,7 @@ function BoardApp({
           />
         )}
         {panel === "subscribe" && <Subscribe onClose={() => setPanel(null)} />}
-        {panel === "guest" && (preview || !data.role) && (
+        {panel === "guest" && (preview || !data.authenticated) && (
           <GuestProfile
             onClose={() => {
               setPanel(null);

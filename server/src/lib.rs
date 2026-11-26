@@ -123,6 +123,7 @@ async fn signed(db: &PgPool, h: &HeaderMap) -> Result<Uuid> {
         .ok_or(Error(StatusCode::UNAUTHORIZED, "sign_in_required".into()))
 }
 pub struct BoardAccess {
+    pub account_id: Option<Uuid>,
     pub role: Option<String>,
     pub public: bool,
     pub org_id: Uuid,
@@ -131,6 +132,7 @@ pub async fn board_access(db: &PgPool, h: &HeaderMap, board: Uuid) -> Result<Boa
     let a = account_id(db, h).await?;
     let r=sqlx::query("SELECT b.org_id,m.role,b.published AND NOT(b.suspended OR o.suspended) AND b.closed_at IS NULL AND o.closed_at IS NULL AS public, (b.suspended OR o.suspended OR b.closed_at IS NOT NULL OR o.closed_at IS NOT NULL) blocked FROM boards b JOIN orgs o ON o.id=b.org_id LEFT JOIN memberships m ON m.org_id=o.id AND m.account_id=$2 WHERE b.id=$1").bind(board).bind(a).fetch_one(db).await?;
     Ok(BoardAccess {
+        account_id: a,
         role: if r.get("blocked") {
             None
         } else {
@@ -153,28 +155,21 @@ fn browser_guest(h: &HeaderMap, org: Uuid) -> Option<String> {
         .or(cookie(h, "pb_browser"))
         .map(|k| hash(&format!("{org}:{k}")))
 }
-async fn staff_account(db: &PgPool, h: &HeaderMap, org: Uuid) -> Result<Option<Uuid>> {
-    let Some(session) = cookie(h, "pb_session") else {
-        return Ok(None);
-    };
-    Ok(sqlx::query_scalar("SELECT m.account_id FROM sessions s JOIN accounts a ON a.id=s.account_id JOIN memberships m ON m.account_id=a.id WHERE s.token=$1 AND s.expires>now() AND a.closed_at IS NULL AND m.org_id=$2")
-        .bind(hash(session)).bind(org).fetch_optional(db).await?)
-}
 pub async fn guest_id(db: &PgPool, h: &HeaderMap, org: Uuid) -> Result<Option<Uuid>> {
-    if let Some(a) = staff_account(db, h, org).await? {
-        return Ok(sqlx::query_scalar(
-            "SELECT id FROM guests WHERE org_id=$1 AND staff_account_id=$2",
-        )
-        .bind(org)
-        .bind(a)
-        .fetch_optional(db)
-        .await?);
+    if let Some(a) = account_id(db, h).await? {
+        return Ok(
+            sqlx::query_scalar("SELECT id FROM guests WHERE org_id=$1 AND account_id=$2")
+                .bind(org)
+                .bind(a)
+                .fetch_optional(db)
+                .await?,
+        );
     }
     let Some(t) = browser_guest(h, org) else {
         return Ok(None);
     };
     Ok(
-        sqlx::query_scalar("SELECT id FROM guests WHERE org_id=$1 AND staff_account_id IS NULL AND (token=$2 OR id=(SELECT guest_id FROM guest_devices WHERE token=$2))")
+        sqlx::query_scalar("SELECT id FROM guests WHERE org_id=$1 AND account_id IS NULL AND (token=$2 OR id=(SELECT guest_id FROM guest_devices WHERE token=$2))")
             .bind(org)
             .bind(t)
             .fetch_optional(db)
@@ -192,8 +187,8 @@ fn ip_hash(h: &HeaderMap, org: Uuid) -> String {
     hash(&format!("{k}|{org}|{s}"))
 }
 pub async fn ensure_guest(db: &PgPool, h: &HeaderMap, org: Uuid) -> Result<(Uuid, Option<String>)> {
-    if let Some(a) = staff_account(db, h, org).await? {
-        let guest = sqlx::query_scalar("INSERT INTO guests(org_id,token,ip_hash,staff_account_id) VALUES($1,$2,$3,$4) ON CONFLICT(org_id,staff_account_id) DO UPDATE SET staff_account_id=excluded.staff_account_id RETURNING id")
+    if let Some(a) = account_id(db, h).await? {
+        let guest = sqlx::query_scalar("INSERT INTO guests(org_id,token,ip_hash,account_id,name) SELECT $1,$2,$3,id,name FROM accounts WHERE id=$4 ON CONFLICT(org_id,account_id) DO UPDATE SET name=excluded.name RETURNING id")
             .bind(org).bind(token()).bind(ip_hash(h,org)).bind(a).fetch_one(db).await?;
         return Ok((guest, None));
     }
@@ -225,7 +220,7 @@ pub async fn check_ban(db: &PgPool, h: &HeaderMap, board: Uuid, g: Uuid) -> Resu
 }
 async fn rate(db: &PgPool, h: &HeaderMap, kind: &str, limit: i32, seconds: i32) -> Result<()> {
     let limit = std::env::var(format!(
-        "PATCHBOARD_RATE_{}",
+        "KISKA_RATE_{}",
         kind.replace('-', "_").to_uppercase()
     ))
     .ok()
@@ -303,11 +298,7 @@ pub async fn effective_ip(mut req: Request, next: Next) -> Response {
             *req.method(),
             axum::http::Method::GET | axum::http::Method::HEAD | axum::http::Method::OPTIONS
         )
-        && req
-            .headers()
-            .get("x-patchboard")
-            .and_then(|h| h.to_str().ok())
-            != Some("1")
+        && req.headers().get("x-kiska").and_then(|h| h.to_str().ok()) != Some("1")
     {
         return Error::forbidden().into_response();
     }

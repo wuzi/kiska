@@ -8,8 +8,8 @@ const filters: Filters = {
   view: "list",
   sort: "trending",
   q: "",
-  status: "",
-  tag: "",
+  status: [],
+  tag: [],
 };
 const board: BoardData = {
   board: { id: "board", slug: "ideas", org_slug: "community", title: "Ideas" },
@@ -70,5 +70,35 @@ describe("public feedback", () => {
     expect(
       labelName({ id: "s", name: "Next patch", preset: null, color: "" }, "pt"),
     ).toBe("Next patch");
+  });
+  it("combines selected tags with statuses in the creator preview", async () => {
+    const preview = previewAdapter({
+      ...board,
+      statuses: [
+        ...board.statuses,
+        { id: "planned", name: "Planned", color: "#09f" },
+      ],
+      posts: [
+        { ...board.posts[0], tag_id: "feature" },
+        { ...board.posts[1], tag_id: "bug" },
+        {
+          id: "c",
+          title: "Reduce latency",
+          status_id: "planned",
+          tag_id: "feature",
+        },
+        { id: "d", title: "Better maps", status_id: "s" },
+      ],
+    });
+    const result = await preview.board(
+      { ...filters, view: "roadmap", tag: ["feature", "bug"], status: ["s"] },
+      "en",
+    );
+    expect(result.posts.map((p) => p.id)).toEqual(["a", "b"]);
+    expect(result.total).toBe(2);
+    expect(result.columns?.map((c) => [c.status_id, c.total])).toEqual([
+      ["s", 2],
+    ]);
+    preview.dispose();
   });
 });

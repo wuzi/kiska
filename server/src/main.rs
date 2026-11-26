@@ -1,4 +1,4 @@
-use patchboard::{AppState, app, contract, publishing};
+use kiska::{AppState, app, contract, publishing};
 use sqlx::postgres::PgPoolOptions;
 use std::{net::SocketAddr, time::Duration};
 
@@ -23,7 +23,7 @@ async fn main() -> anyhow::Result<()> {
         "operator" => {
             let email = args
                 .next()
-                .ok_or_else(|| anyhow::anyhow!("usage: patchboard operator VERIFIED_EMAIL"))?;
+                .ok_or_else(|| anyhow::anyhow!("usage: kiska operator VERIFIED_EMAIL"))?;
             let n=sqlx::query("UPDATE accounts SET operator=true WHERE email=lower($1) AND verified AND closed_at IS NULL").bind(email).execute(&db).await?;
             anyhow::ensure!(n.rows_affected() == 1, "verified account not found");
         }

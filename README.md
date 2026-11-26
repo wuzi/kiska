@@ -1,10 +1,12 @@
-<img src="assets/icon.svg" width="64" height="64" alt="">
+<img src="web/public/assets/kiska.png" width="64" height="64" alt="">
 
-# PatchBoard
+# kiska
 
-PatchBoard hosts feedback boards, roadmaps and community updates. One installation supports multiple organizations. The Rust service serves the API, initial public HTML and built React applications. PostgreSQL stores accounts, board content, sessions, jobs and media references. Private SeaweedFS stores processed images.
+kiska hosts feedback boards, roadmaps and community updates. One installation supports multiple organizations. The Rust service serves the API, initial public HTML and built React applications. PostgreSQL stores accounts, board content, sessions, jobs and media references. Private SeaweedFS stores processed images.
 
 [Launch specification](docs/spec.md) · [Performance results and release verification](docs/launch-verification.md)
+
+![A busy community roadmap in kiska, with posts, votes, tags, and six status columns.](assets/community-roadmap.png)
 
 ## Run locally with email
 
@@ -29,7 +31,7 @@ Open [the creator workspace](http://localhost:8080/app), register, open the veri
 
 ## Deploy on one VPS
 
-1. Keep a private copy of the repository and the generated `.env`. Set `PUBLIC_ORIGIN` to the external HTTPS origin, without a trailing slash. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` and the relay credentials. Reserve `/patchboard-media/` on the public origin. Set account `SUPPORT_URL` and `POLICY_URL` if desired.
+1. Keep the generated `.env` private. Set `PUBLIC_ORIGIN` to the external HTTPS origin, such as `https://usekiska.com`, without a trailing slash. Discord previews use this origin for canonical links and images. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` and the relay credentials. Reserve `/kiska-media/` on the public origin. Set account `SUPPORT_URL` and `POLICY_URL` if desired.
 2. Provide an HTTPS reverse proxy that preserves the incoming Host, path and query string. Forward all requests to the loopback port selected by `HTTP_PORT`. The bundled Nginx gateway routes signed reads to S3 and all other application requests to Axum. It restricts exposed S3 methods and paths and sets `Cache-Control: private, no-store`. Configure your outer proxy or CDN to honor this policy. Database, S3 write access, SMTP sink and SeaweedFS management interfaces stay on Docker networks in the production configuration.
 3. Set a stable proxy network and trusted addresses if `10.201.91.0/24` overlaps an existing network. `PROXY_SUBNET`, `PROXY_IP` (bundled gateway) and `HTTPS_PROXY_IP` (outer proxy peer as seen by that gateway) must match the installation. The outer proxy must overwrite the client-address header using the real connection address. Keep `IP_HASH_KEY` stable for existing abuse signals.
 4. Run the production Compose file. Migrations run once before the app and worker start. The worker delivers the durable email queue and removes expired staging and deleted objects. Both processes use the same image. The first build downloads and compiles locked dependencies.
@@ -41,10 +43,12 @@ Open [the creator workspace](http://localhost:8080/app), register, open the veri
    docker compose ps
    ```
 
+For an existing installation, keep its Compose project name, PostgreSQL role and database, and S3 bucket. Set `COMPOSE_PROJECT_NAME`, `POSTGRES_USER`, `POSTGRES_DB`, and `S3_BUCKET` in its private `.env` before applying the rebrand. This reconnects the services to their existing volumes and media.
+
 With Caddy on the host, the following site block terminates TLS. Replace the hostname and port with your values.
 
 ```caddyfile
-feedback.example.org {
+usekiska.com {
     reverse_proxy 127.0.0.1:8080 {
         header_up Host {http.request.hostport}
         header_up X-Forwarded-For {remote_host}
@@ -61,14 +65,14 @@ Use Docker Compose, Bash and GNU coreutils on the host. The tools image includes
 1. Mount a private directory and capture a consistent snapshot. Supply a **new** directory path. The script records which writer services were running, stops them, captures the database and bucket, verifies the stored sizes of ready database references, and restarts those services. It writes a checksum manifest last. A completed snapshot contains `db.dump`, `objects/`, `media.refs`, `objects.sha256` and `snapshot.sha256`.
 
    ```sh
-   ops/backup/run.sh "/srv/patchboard-backups/$(date -u +%Y%m%dT%H%M%SZ)"
+   ops/backup/run.sh "/srv/kiska-backups/$(date -u +%Y%m%dT%H%M%SZ)"
    ```
 
-2. Transfer the completed capture off the VPS over an authenticated, encrypted connection to storage with private permissions, retention and encryption at rest. For example, send the snapshot directory to a preconfigured, encrypted remote backup host using `rsync -a -e ssh -- "$snapshot/" "backup-host:/private/patchboard/$snapshot_name/"`. Separately protect and back up the deployment revision, `.env`, TLS configuration and the keys required to decrypt backups. The dump contains user data and potentially deliverable messages. Treat the dump, object bytes and keys as sensitive.
+2. Transfer the completed capture off the VPS over an authenticated, encrypted connection to storage with private permissions, retention and encryption at rest. For example, send the snapshot directory to a preconfigured, encrypted remote backup host using `rsync -a -e ssh -- "$snapshot/" "backup-host:/private/kiska/$snapshot_name/"`. Separately protect and back up the deployment revision, `.env`, TLS configuration and the keys required to decrypt backups. The dump contains user data and potentially deliverable messages. Treat the dump, object bytes and keys as sensitive.
 3. Retrieve the snapshot and configuration on the recovery host. Set `COMPOSE_PROJECT_NAME` to a fresh name. Configure a local mail sink while rehearsing and keep public traffic off the target. Start with empty database and storage volumes. `ops/restore/run.sh` checks archive hashes, checks the target is empty, uploads the objects, downloads and verifies their checksums, restores PostgreSQL in one transaction, and compares the restored DB references with the capture. A failed import may have already copied objects. Retry using fresh empty volumes.
 
    ```sh
-   export COMPOSE_PROJECT_NAME=patchboard_recovered
+   export COMPOSE_PROJECT_NAME=kiska_recovered
    export COMPOSE_FILE=compose.yaml:compose.dev.yaml
    ops/restore/run.sh /srv/restored-backup
    docker compose up -d --wait
@@ -94,7 +98,7 @@ Use the supported Node version from CI (24), a Rust toolchain supporting the 202
 
 Install the test browser once with `npm --prefix web ci` and `(cd web && npx playwright install chromium)`. The browser and performance targets require Bash, Python 3, `flock`, and `psql` on the host. The performance profiles use Chromium emulation on the host CPU. Full release measurements use a quiet machine. Each test stack is removed when its command exits.
 
-The operator screen sets the default free allowances for newly registered creators and newly created organizations. Existing account and organization limits can be changed individually. The Compose environment exposes `PATCHBOARD_RATE_*` settings for signup, login, identity and organization creation, uploads, and feedback actions. Signup, login and password recovery use a 15-minute window. Organization creation, uploads and guest posting use a one-hour window.
+The operator screen sets the default free allowances for newly registered creators and newly created organizations. Existing account and organization limits can be changed individually. The Compose environment exposes `KISKA_RATE_*` settings for signup, login, identity and organization creation, uploads, and feedback actions. Signup, login and password recovery use a 15-minute window. Organization creation, uploads and guest posting use a one-hour window.
 
 Published announcements create one durable delivery job per verified recipient. Retries reuse the same Message-ID. If an SMTP relay accepts mail and loses the connection before acknowledging it, it can deliver a retry twice. The worker rechecks board visibility and recipient eligibility before delivery.
 

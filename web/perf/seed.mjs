@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { deflateSync } from "node:zlib";
 import { fixtureId } from "./profiles.mjs";
 const database = process.env.PERF_DATABASE_URL;
-const origin = process.env.PATCHBOARD_URL || "http://127.0.0.1:8080";
+const origin = process.env.KISKA_URL || "http://127.0.0.1:8080";
 if (
   !database ||
   !/(^|_)(perf|benchmark)(_|$)/.test(new URL(database).pathname.slice(1))
@@ -84,7 +84,7 @@ if (!existing) {
       method: "POST",
       headers: {
         "Content-Type": "image/png",
-        "X-PatchBoard": "1",
+        "X-Kiska": "1",
         Cookie: "pb_session=" + session,
       },
       body: bytes,

@@ -1,6 +1,6 @@
-log_format patchboard '$remote_addr [$time_local] "$request_method $uri $server_protocol" $status $body_bytes_sent';
+log_format kiska '$remote_addr [$time_local] "$request_method $uri $server_protocol" $status $body_bytes_sent';
 server {
-    access_log /var/log/nginx/access.log patchboard;
+    access_log /var/log/nginx/access.log kiska;
     listen 8080;
     server_name _;
     server_tokens off;
@@ -11,7 +11,7 @@ server {
 
     # Preserve the exact Host and URI used to sign GET. Only application-generated
     # object paths are exposed. Bucket listing and all write methods stay private.
-    location ~ "^/patchboard-media/[0-9a-f-]{36}/[0-9a-f-]{36}/[0-9a-f-]{36}\.webp$" {
+    location ~ "^/${S3_BUCKET}/[0-9a-f-]{36}/[0-9a-f-]{36}/[0-9a-f-]{36}\.webp$" {
         limit_except GET { deny all; }
         set $s3_origin storage-edge:8333;
         proxy_pass http://$s3_origin$request_uri;
@@ -22,7 +22,7 @@ server {
         add_header Cache-Control "private, no-store" always;
         add_header X-Content-Type-Options nosniff always;
     }
-    location /patchboard-media/ { return 404; }
+    location /${S3_BUCKET}/ { return 404; }
     location / {
         set $app_origin app-edge:8080;
         proxy_pass http://$app_origin$request_uri;

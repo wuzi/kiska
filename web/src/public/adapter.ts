@@ -22,8 +22,8 @@ export function liveAdapter(board: Board): Adapter {
       });
       for (const [key, value] of Object.entries({
         q: filters.q,
-        status: filters.status,
-        tag: filters.tag,
+        status: filters.status.join(","),
+        tag: filters.tag.join(","),
         cursor,
       })) {
         if (value) params.set(key, value);
@@ -65,11 +65,11 @@ export function liveAdapter(board: Board): Adapter {
     writePost: (payload, id) =>
       json(id ? postUrl(id) : base + "/posts", id ? "PATCH" : "POST", payload),
     removePost: (id) => json(postUrl(id), "DELETE"),
-    comment: (id, body, parent_id, edit) =>
+    comment: (id, body, parent_id, edit, guest_name) =>
       json(
         edit ? commentUrl(edit) : postUrl(id) + "/comments",
         edit ? "PATCH" : "POST",
-        { body, parent_id },
+        { body, parent_id, guest_name },
       ),
     removeComment: (id) => json(commentUrl(id), "DELETE"),
     like: (id, desired) =>

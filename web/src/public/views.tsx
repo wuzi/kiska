@@ -53,6 +53,7 @@ export function PostCard({
     <article
       className={"pb-card " + (roadmap ? "pb-road-card" : "pb-list-card")}
       data-post={post.id}
+      onDragStart={(event) => event.preventDefault()}
     >
       {!roadmap && <Vote post={post} />}
       <div className="pb-card-main">
@@ -61,6 +62,7 @@ export function PostCard({
           <a
             href={postPath(data.board, post)}
             data-post-link={post.id}
+            draggable={false}
             className="pb-card-title"
             onClick={(e) => {
               if (
@@ -148,7 +150,7 @@ function Column({
     initialData: { pages: [seed], pageParams: [""] },
     queryFn: async ({ pageParam, signal }) => {
       const page = await adapter.board(
-        { ...filters, view: "list", status: status.id, sort: "top" },
+        { ...filters, view: "list", status: [status.id], sort: "top" },
         locale,
         pageParam,
         signal,
@@ -216,7 +218,7 @@ export function Roadmap({
         .filter(
           (s) =>
             s.on_roadmap !== false &&
-            (!filters.status || s.id === filters.status),
+            (!filters.status.length || filters.status.includes(s.id)),
         )
         .map((status) => {
           const posts = data.posts.filter((p) => p.status_id === status.id);

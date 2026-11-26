@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { ImagePlus, X } from "lucide-react";
 import { useBoard } from "../context";
 import { eligibleStatuses } from "../views";
-import { ErrorBox, Modal, SelectLabel } from "../ui";
+import { ErrorBox, GuestNameField, Modal, SelectLabel } from "../ui";
 
 import { postPath, type Media, type Post } from "../types";
 
@@ -30,6 +30,7 @@ export default function PostComposer({
         ?.id ??
       "",
   );
+  const [guestName, setGuestName] = useState<string>();
   const [tag, setTag] = useState(original?.tag_id ?? "");
   const [media, setMedia] = useState<Media[]>(original?.media ?? []);
   const staged = useRef(new Set<string>());
@@ -66,6 +67,7 @@ export default function PostComposer({
       return adapter.writePost(
         {
           title: title.trim(),
+          guest_name: guestName,
           body,
           status_id: status,
           tag_id: tag || null,
@@ -258,6 +260,11 @@ export default function PostComposer({
             )}
           </div>
         )}
+        {!original &&
+          fields.author !== false &&
+          (preview || !data.authenticated) && (
+            <GuestNameField value={guestName} onChange={setGuestName} />
+          )}
         <ErrorBox error={failure || submit.error} />
         <div className="pb-form-actions">
           <button

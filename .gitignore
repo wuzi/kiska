@@ -4,5 +4,8 @@
 /web/test-results
 /web/playwright-report
 /.env
+/.env.*
+!/.env.example
+/backups/
 /.superpowers/
 /artifacts/

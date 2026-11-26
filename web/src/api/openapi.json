@@ -1,17 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "utoipa-axum",
-    "description": "Utoipa's axum bindings for seamless integration for the two",
-    "contact": {
-      "name": "Juha Kukkonen",
-      "email": "juha7kukkonen@gmail.com"
-    },
-    "license": {
-      "name": "MIT OR Apache-2.0",
-      "identifier": "MIT OR Apache-2.0"
-    },
-    "version": "0.2.0"
+    "title": "kiska API",
+    "description": "Community feedback boards and roadmaps",
+    "version": "0.1.0"
   },
   "paths": {
     "/api/v1/b/{org}/{board}": {
@@ -3984,10 +3976,14 @@
       "ActorSummary": {
         "type": "object",
         "required": [
+          "authenticated",
           "name",
           "staff"
         ],
         "properties": {
+          "authenticated": {
+            "type": "boolean"
+          },
           "avatar_url": {
             "type": [
               "string",
@@ -4214,6 +4210,12 @@
         "properties": {
           "body": {
             "type": "string"
+          },
+          "guest_name": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "parent_id": {
             "type": [
@@ -4553,6 +4555,12 @@
           "body": {
             "type": "string"
           },
+          "guest_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "media_ids": {
             "type": "array",
             "items": {
@@ -4681,6 +4689,7 @@
       "PublicPage": {
         "type": "object",
         "required": [
+          "authenticated",
           "board",
           "statuses",
           "tags",
@@ -4691,6 +4700,9 @@
           "updates"
         ],
         "properties": {
+          "authenticated": {
+            "type": "boolean"
+          },
           "board": {
             "$ref": "#/components/schemas/BoardSummary"
           },

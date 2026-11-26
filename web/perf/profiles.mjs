@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 export const fixtureId = (kind, n) => {
   const hex = createHash("md5")
-    .update("patchboard-perf:" + kind + ":" + n)
+    .update("kiska-perf:" + kind + ":" + n)
     .digest("hex");
   return [
     hex.slice(0, 8),

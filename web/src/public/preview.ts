@@ -43,8 +43,8 @@ export function previewAdapter(
       const words = normalize(f.q).trim().split(/\s+/).filter(Boolean);
       const matches = posts.filter(
         (p) =>
-          (!f.status || p.status_id === f.status) &&
-          (!f.tag || p.tag_id === f.tag) &&
+          (!f.status.length || f.status.includes(p.status_id)) &&
+          (!f.tag.length || f.tag.includes(p.tag_id ?? "")) &&
           words.every((word) =>
             normalize(p.title + " " + (p.body ?? ""))
               .split(/[^\p{L}\p{N}]+/u)
@@ -77,7 +77,11 @@ export function previewAdapter(
         next_cursor: result.next_cursor,
         total: matches.length,
         columns: initial.statuses
-          .filter((s) => s.on_roadmap !== false)
+          .filter(
+            (s) =>
+              s.on_roadmap !== false &&
+              (!f.status.length || f.status.includes(s.id)),
+          )
           .map((s) => {
             const col = matches.filter((p) => p.status_id === s.id);
             return {
@@ -115,6 +119,8 @@ export function previewAdapter(
       return fixed(p);
     },
     writePost: (payload, id) => {
+      if (!id && payload.guest_name !== undefined)
+        guest.name = payload.guest_name.trim();
       const p: Post = id
         ? find(id)
         : {
@@ -142,7 +148,8 @@ export function previewAdapter(
       posts.splice(posts.indexOf(find(id)), 1);
       return fixed(null);
     },
-    comment: (id, body, parent_id, edit) => {
+    comment: (id, body, parent_id, edit, guestName) => {
+      if (!edit && guestName !== undefined) guest.name = guestName.trim();
       const p = find(id);
       if (edit) {
         const c = commentById(edit);

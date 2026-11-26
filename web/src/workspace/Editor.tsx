@@ -1091,7 +1091,7 @@ const Canvas = memo(
           draggable={!moving}
           onDragStart={(e) =>
             e.dataTransfer.setData(
-              "text/patchboard-post",
+              "text/kiska-post",
               JSON.stringify({ id: p.id, from: p.status_id }),
             )
           }
@@ -1242,7 +1242,7 @@ const Canvas = memo(
                     onDrop={(e) => {
                       e.preventDefault();
                       const raw = e.dataTransfer.getData(
-                        "text/patchboard-post",
+                        "text/kiska-post",
                       );
                       if (!raw || !live) return;
                       try {

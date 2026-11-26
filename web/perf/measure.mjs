@@ -14,7 +14,7 @@ import {
   fixtureId,
 } from "./profiles.mjs";
 
-const origin = process.env.PATCHBOARD_URL || "http://127.0.0.1:8080";
+const origin = process.env.KISKA_URL || "http://127.0.0.1:8080";
 const session = process.env.PERF_SESSION;
 if (!session)
   throw new Error("Supply PERF_SESSION for the verified measurement account");

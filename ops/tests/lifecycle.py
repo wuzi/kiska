@@ -35,7 +35,7 @@ class Client:
         )
 
     def request(self, path, method="GET", data=None, expect=(200, 201, 204)):
-        headers = {"x-patchboard": "1"}
+        headers = {"x-kiska": "1"}
         if isinstance(data, bytes):
             headers["Content-Type"] = "image/png"
         elif data is not None:
@@ -89,7 +89,7 @@ def assert_grant(client, image, digest):
     headers, _ = client.request(image, expect=(307,))
     assert "no-store" in headers["Cache-Control"]
     url = headers["Location"]
-    assert url.startswith(ORIGIN + "/patchboard-media/")
+    assert url.startswith(ORIGIN + "/kiska-media/")
     query = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
     assert 0 < int(query["X-Amz-Expires"][0]) <= 300
     headers, payload = client.request(url)
@@ -112,7 +112,7 @@ def sql(statement):
             "db",
             "psql",
             "-U",
-            "patchboard",
+            "kiska",
             "-v",
             "ON_ERROR_STOP=1",
             "-Atq",

@@ -3,7 +3,7 @@ services:
     environment: &devmail
       SMTP_HOST: inbox
       SMTP_PORT: "1025"
-      SMTP_FROM: PatchBoard <patchboard@example.test>
+      SMTP_FROM: kiska <kiska@example.test>
       SMTP_TLS: none
       SMTP_USERNAME: ""
       SMTP_PASSWORD: ""

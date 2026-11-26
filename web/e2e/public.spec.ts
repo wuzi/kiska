@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { profileComponent } from "./render-profile";
 
-const path = process.env.PATCHBOARD_E2E_BOARD || "/b/atlas-lab/community";
+const path = process.env.KISKA_E2E_BOARD || "/b/atlas-lab/community";
 test.beforeEach(async ({ page }) => {
   await page.goto(path);
   await expect(page.locator(".pb-card").first()).toBeVisible();
@@ -32,7 +32,7 @@ test("@public keeps lists, filters, known details and browser history usable whi
     await gate;
     await route.continue().catch(() => {});
   });
-  await card.locator("a").click();
+  await card.click({ position: { x: 5, y: 5 } });
   await expect(
     page.getByRole("dialog").getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
@@ -73,6 +73,7 @@ test("@public reconciles a rejected vote without erasing another successful vote
     await route.fulfill({ status: 403, json: { message: "Vote rejected" } });
   });
   await first.locator(".pb-vote").click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(first.locator(".pb-vote")).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -93,35 +94,85 @@ test("@public reconciles a rejected vote without erasing another successful vote
   await expect(liveB).toHaveAttribute("aria-pressed", "false");
 });
 
+test("@public keeps roadmap columns mounted during overlapping searches", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Roadmap", exact: true }).click();
+  const firstCard = page.locator(".pb-road-card a").first();
+  const title = await firstCard.innerText();
+  const firstColumn = await page.locator(".pb-column").first().elementHandle();
+  const firstWord = title.match(/[\p{L}\p{N}]+/u)![0];
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const matchesFirstSearch = (url: URL) =>
+    url.pathname.startsWith("/api/v1/b/") &&
+    url.searchParams.get("q") === firstWord;
+  await page.route(matchesFirstSearch, async (route) => {
+    await gate;
+    await route.continue().catch(() => {});
+  });
+  await page
+    .getByRole("button", { name: "Search feedback", exact: true })
+    .click();
+  const input = page.getByRole("searchbox");
+  const pending = page.waitForRequest((r) =>
+    matchesFirstSearch(new URL(r.url())),
+  );
+  await input.fill(firstWord);
+  await pending;
+  try {
+    expect(await firstColumn!.evaluate((node) => node.isConnected)).toBe(true);
+    await expect(firstCard).toHaveText(title);
+    await input.fill("zzzznomatchingfeedback");
+    await expect(page.locator(".pb-road-card")).toHaveCount(0);
+    await expect(page.locator(".pb-col-count")).toHaveText(Array(6).fill("0"));
+  } finally {
+    release();
+  }
+  expect(await firstColumn!.evaluate((node) => node.isConnected)).toBe(true);
+  await input.fill("");
+  await expect(firstCard).toHaveText(title);
+  await expect(input).toBeFocused();
+});
+
 test("@compose guest submits, comments, replies, edits and retracts a like", async ({
   page,
 }) => {
   const title = "Browser feedback " + randomUUID().slice(0, 8);
   await page.getByRole("button", { name: "New post", exact: true }).click();
   let modal = page.getByRole("dialog");
+  await modal.getByLabel("Your name (optional)").fill("River");
   await modal.getByLabel("Title", { exact: true }).fill(title);
   await modal
     .getByRole("textbox", { name: "Description", exact: true })
     .fill("A trail report from the mobile app.");
   await modal.getByRole("button", { name: "Submit feedback" }).click();
   await expect(modal).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Search feedback", exact: true })
+    .click();
   await page.getByRole("searchbox", { name: "Search feedback" }).fill(title);
   const link = page.getByRole("link", { name: title, exact: true });
   await expect(link).toBeVisible();
   await link.click();
   modal = page.getByRole("dialog");
   await modal.getByRole("button", { name: "Write a comment…" }).click();
+  const name = modal.getByLabel("Your name (optional)");
+  await expect(name).toHaveValue("River");
+  await name.fill("River Scout");
   const editor = modal.getByRole("textbox", { name: "Write a comment" });
   await editor.fill("An idea from our group.");
   await page.evaluate(() => {
     window.dispatchEvent(new Event("focus"));
   });
   await expect(editor).toHaveText("An idea from our group.");
-  await modal
-    .getByRole("button", { name: "Post comment", exact: true })
-    .click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   const comment = modal.locator(".pb-comment").first();
   await expect(comment).toContainText("An idea from our group.");
+  await expect(comment.locator(".pb-byline b")).toHaveText("River Scout");
+  await expect(comment.locator(".pb-team")).toHaveCount(0);
   await comment.getByRole("button", { name: "Like", exact: true }).click();
   await expect(
     comment.getByRole("button", { name: "Remove like" }),
@@ -204,6 +255,55 @@ test("@public roadmap, published update snapshots, subscription, locale and gues
   ).toBeVisible();
 });
 
+test("@public fits six roadmap columns on desktop and shares the discussion from a card", async ({
+  page,
+  context,
+}) => {
+  await page.getByRole("button", { name: "Roadmap", exact: true }).click();
+  const roadmap = page.locator(".pb-roadmap");
+  await expect(roadmap.locator(".pb-column")).toHaveCount(6);
+  for (const width of [1440, 1000, 390]) {
+    await page.setViewportSize({ width, height: 740 });
+    const overflow = await roadmap.evaluate(
+      (el) => el.scrollWidth - el.clientWidth,
+    );
+    const header = (await page.locator(".pb-hero").boundingBox())!;
+    const toolbar = (await page.locator(".pb-navrow").boundingBox())!;
+    const columns = (await roadmap.boundingBox())!;
+    expect(header.x + header.width / 2).toBeCloseTo(
+      columns.x + columns.width / 2,
+    );
+    expect(toolbar.x).toBe(header.x);
+    expect(toolbar.width).toBe(header.width);
+    expect(header.width).toBe(width === 390 ? columns.width : 640);
+    if (width === 390) expect(overflow).toBeGreaterThan(0);
+    else expect(overflow).toBe(0);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBe(width);
+  }
+  const card = roadmap.locator(".pb-card").first();
+  const link = card.getByRole("link");
+  const title = await link.innerText();
+  const url = new URL((await link.getAttribute("href"))!, page.url()).href;
+  await card.click({ position: { x: 5, y: 5 } });
+  const header = page.getByRole("dialog").locator("header");
+  await expect(header.getByRole("heading")).toHaveText(title);
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await header.getByRole("button", { name: "Copy link" }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(url);
+  const shared = await context.newPage();
+  await shared.goto(url);
+  await expect(
+    shared
+      .getByRole("dialog")
+      .getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  await shared.close();
+});
+
 test("@public keeps long columns and thread DOM bounded as pages accumulate", async ({
   page,
 }) => {
@@ -223,6 +323,27 @@ test("@public keeps long columns and thread DOM bounded as pages accumulate", as
   const thread = dialog.getByRole("list", { name: "Comments" });
   await expect(thread.locator(".pb-virtual-inner")).toHaveCount(1);
   expect(await thread.locator(".pb-comment").count()).toBeLessThan(40);
+  const header = dialog.locator(".pb-modal-header");
+  const author = dialog.locator(".pb-detail-summary .pb-byline");
+  const footer = dialog.locator(".pb-comment-footer");
+  const scroll = dialog.locator(".pb-detail-scroll");
+  const fixed = () =>
+    Promise.all([header, author, footer].map((el) => el.boundingBox()));
+  const positions = await fixed();
+  await scroll.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  await expect
+    .poll(() => scroll.evaluate((el) => el.scrollTop))
+    .toBeGreaterThan(0);
+  expect(await fixed()).toEqual(positions);
+  await expect(thread.locator("[aria-posinset]").last()).toHaveAttribute(
+    "aria-posinset",
+    (await thread
+      .locator("[aria-setsize]")
+      .first()
+      .getAttribute("aria-setsize"))!,
+  );
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await page.getByRole("button", { name: "Roadmap", exact: true }).click();
   const column = page.locator(".pb-column").first();
@@ -271,6 +392,9 @@ test("@compose serialized Markdown survives a server round trip with managed med
   await expect(modal.locator(".pb-thumbs img")).toHaveCount(1);
   await modal.getByRole("button", { name: "Submit feedback" }).click();
   await expect(modal).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Search feedback", exact: true })
+    .click();
   await page.getByRole("searchbox", { name: "Search feedback" }).fill(title);
   await page.getByRole("link", { name: title, exact: true }).click();
   await expect(modal.locator(".pb-prose strong").first()).toHaveText(
@@ -320,4 +444,44 @@ test("@performance typing a comment does not rerender board cards", async ({
   const editor = page.getByRole("textbox", { name: "Write a comment" });
   await editor.click();
   await check(() => editor.pressSequentially("Please add this feature."));
+});
+
+test("@public combines tag and status filters and restores shared selections", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 740 });
+  await page.getByRole("button", { name: "Roadmap", exact: true }).click();
+  const trigger = page.getByRole("button", { name: "Filters", exact: true });
+  await trigger.click();
+  const popup = page.getByRole("dialog", { name: "Filters" });
+  const rect = await popup.boundingBox();
+  expect(rect!.x).toBeGreaterThanOrEqual(0);
+  expect(rect!.x + rect!.width).toBeLessThanOrEqual(390);
+  await popup.getByLabel("Feature", { exact: true }).check();
+  await popup.getByLabel("Bug", { exact: true }).check();
+  await popup.locator("summary").click();
+  await popup.getByLabel("Planned", { exact: true }).check();
+  await page.keyboard.press("Escape");
+  await expect(popup).toHaveCount(0);
+  await expect(trigger).toHaveText("3");
+  const column = page.locator(".pb-column");
+  await expect(column).toHaveCount(1);
+  await expect(column.locator(".pb-col-head")).toContainText("Planned");
+  const tags = column.locator(".pb-card .pb-chip");
+  await expect(tags.first()).toBeVisible();
+  expect([...new Set(await tags.allTextContents())].sort()).toEqual([
+    "Bug",
+    "Feature",
+  ]);
+  await page.reload();
+  await expect(trigger).toHaveText("3");
+  await expect(popup).toHaveCount(0);
+  await page.getByRole("button", { name: "Remove filter · Bug" }).click();
+  await expect(trigger).toHaveText("2");
+  await page
+    .getByRole("button", { name: "Clear filters", exact: true })
+    .first()
+    .click();
+  await expect(column).toHaveCount(6);
+  await expect(page.locator(".pb-filter-chips")).toHaveCount(0);
 });

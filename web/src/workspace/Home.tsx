@@ -88,7 +88,7 @@ export function Home({
   ) {
     e.preventDefault();
     e.stopPropagation();
-    const dragged = e.dataTransfer.getData("text/patchboard-folder");
+    const dragged = e.dataTransfer.getData("text/kiska-folder");
     if (dragged) {
       const from = folders.find((f) => f.id === dragged),
         to = folders.find((f) => f.id === folderId);
@@ -101,7 +101,7 @@ export function Home({
       return;
     }
     const b = boards.find(
-      (x) => x.id === e.dataTransfer.getData("text/patchboard-board"),
+      (x) => x.id === e.dataTransfer.getData("text/kiska-board"),
     );
     if (!b) return;
     if (pinned) pin(b, true);
@@ -129,7 +129,7 @@ export function Home({
           draggable={!!folderItem && admin}
           onDragStart={(e) => {
             if (folderItem)
-              e.dataTransfer.setData("text/patchboard-folder", folderItem.id);
+              e.dataTransfer.setData("text/kiska-folder", folderItem.id);
           }}
         >
           <button
@@ -180,7 +180,7 @@ export function Home({
                 className="ws-board-row"
                 draggable={!b.closed_at}
                 onDragStart={(e) => {
-                  e.dataTransfer.setData("text/patchboard-board", b.id);
+                  e.dataTransfer.setData("text/kiska-board", b.id);
                 }}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => drop(e, id === "root" ? null : id, i, pinned)}

@@ -17,7 +17,7 @@ export async function api<T>(
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
   if (!["GET", "HEAD"].includes((options.method ?? "GET").toUpperCase())) {
-    headers.set("X-PatchBoard", "1");
+    headers.set("X-Kiska", "1");
   }
   if (typeof options.body === "string" && !headers.has("Content-Type"))
     headers.set("Content-Type", "application/json");

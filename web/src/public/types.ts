@@ -15,6 +15,7 @@ export interface Label extends Pick<Schemas["Label"], "id" | "name" | "color"> {
 export interface Guest {
   name?: string | null;
   avatar_url?: string | null;
+  authenticated?: boolean;
   staff?: boolean;
 }
 export interface Media {
@@ -141,6 +142,7 @@ export interface BoardData {
   tags: Label[];
   posts: Post[];
   next_cursor?: number | null;
+  authenticated?: boolean;
   role?: string | null;
   total?: number;
   updates?: Update[];
@@ -153,10 +155,13 @@ export interface Filters {
   view: View;
   sort: Sort;
   q: string;
-  status: string;
-  tag: string;
+  status: string[];
+  tag: string[];
 }
-export interface Submission extends Required<Schemas["PostInput"]> {
+export interface Submission extends Required<
+  Omit<Schemas["PostInput"], "guest_name">
+> {
+  guest_name?: string;
   status_id: string;
 }
 export function publicPath(board: Board) {
@@ -204,6 +209,7 @@ export interface Adapter {
     body: string,
     parent_id: string | null,
     edit?: string,
+    guestName?: string,
   ): Promise<unknown>;
   removeComment(id: string): Promise<unknown>;
   like(id: string, desired: boolean): Promise<unknown>;

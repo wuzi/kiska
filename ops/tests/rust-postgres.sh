@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-if [[ -n "${PATCHBOARD_TEST_DATABASE_URL:-}" ]]; then
-    DATABASE_URL="$PATCHBOARD_TEST_DATABASE_URL" cargo test --locked --workspace "$@"
+if [[ -n "${KISKA_TEST_DATABASE_URL:-}" ]]; then
+    DATABASE_URL="$KISKA_TEST_DATABASE_URL" cargo test --locked --workspace "$@"
     exit
 fi
 container=$(docker run --detach --rm -e POSTGRES_PASSWORD=local-test --publish 127.0.0.1::5432 postgres:17)

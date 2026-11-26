@@ -11,17 +11,17 @@ WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY server/Cargo.toml server/Cargo.toml
 RUN --mount=type=cache,target=/usr/local/cargo/registry --mount=type=cache,target=/build/target \
-    mkdir -p server/src && echo 'fn main() {}' > server/src/main.rs && cargo build --locked --release -p patchboard && rm -rf server/src
+    mkdir -p server/src && echo 'fn main() {}' > server/src/main.rs && cargo build --locked --release -p kiska && rm -rf server/src
 COPY server/ server/
 RUN --mount=type=cache,target=/usr/local/cargo/registry --mount=type=cache,target=/build/target \
-    touch server/src/main.rs && cargo build --locked --release -p patchboard && cp target/release/patchboard /patchboard
+    touch server/src/main.rs && cargo build --locked --release -p kiska && cp target/release/kiska /kiska
 
 FROM debian:bookworm-slim@sha256:e67eeead736ff7bbe258ef088bff683635c561b1fcfefad0806c1df4ab49ce0e
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/*
-COPY --from=rust /patchboard /usr/local/bin/patchboard
-COPY --from=web /build/web/dist /opt/patchboard/web
-ENV WEB_DIST=/opt/patchboard/web
+COPY --from=rust /kiska /usr/local/bin/kiska
+COPY --from=web /build/web/dist /opt/kiska/web
+ENV WEB_DIST=/opt/kiska/web
 USER 65532:65532
 EXPOSE 8080
-ENTRYPOINT ["patchboard"]
+ENTRYPOINT ["kiska"]
 CMD ["serve"]

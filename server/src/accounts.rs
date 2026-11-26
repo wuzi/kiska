@@ -57,7 +57,7 @@ pub(crate) async fn mail_token(
     queue(
         tx,
         e,
-        &format!("PatchBoard · {flow}"),
+        &format!("kiska · {flow}"),
         &format!(
             "Open this link to continue:\n{}/app?flow={flow}&token={t}",
             s.origin

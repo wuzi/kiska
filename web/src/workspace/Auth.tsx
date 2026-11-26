@@ -114,9 +114,7 @@ export function Auth({
           {sent ? (
             <MailCheck />
           ) : (
-            <span>
-              p<span>•</span>
-            </span>
+            <img src="/assets/kiska.png" alt="" width="40" height="40" />
           )}
         </div>
         <h1>
@@ -142,8 +140,8 @@ export function Auth({
                     "Entre com o endereço convidado para participar da organização.",
                   )
                 : t(
-                    "Sign in to your PatchBoard workspace.",
-                    "Entre no seu espaço PatchBoard.",
+                    "Sign in to your kiska workspace.",
+                    "Entre no seu espaço kiska.",
                   )
               : mode === "register"
                 ? t(
@@ -222,7 +220,7 @@ export function Auth({
         )}
         {mode === "login" ? (
           <footer>
-            {t("New to PatchBoard?", "Novo no PatchBoard?")}{" "}
+            {t("New to kiska?", "Novo no kiska?")}{" "}
             <button className="ws-text" onClick={() => select("register")}>
               {t("Create an account", "Criar uma conta")}
             </button>

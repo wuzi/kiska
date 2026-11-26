@@ -1,4 +1,4 @@
--- Run only in a dedicated measurement database against a migrated PatchBoard.
+-- Run only in a dedicated measurement database against a migrated kiska.
 -- Supply a freshly generated session_hash SHA256 using psql -v session_hash=...
 \set ON_ERROR_STOP on
 BEGIN;
@@ -7,9 +7,9 @@ BEGIN
   IF current_database() !~ '(^|_)(perf|benchmark)(_|$)' THEN RAISE EXCEPTION 'use a dedicated perf database'; END IF;
 END $$;
 CREATE FUNCTION pg_temp.fixture_id(kind text,n int) RETURNS uuid LANGUAGE sql IMMUTABLE AS $$
-SELECT md5('patchboard-perf:'||kind||':'||n)::uuid $$;
+SELECT md5('kiska-perf:'||kind||':'||n)::uuid $$;
 INSERT INTO accounts(id,email,password_hash,name,verified)
-VALUES(pg_temp.fixture_id('account',1),'perf-owner@patchboard.invalid','disabled','Kaya Morgan',true) ON CONFLICT DO NOTHING;
+VALUES(pg_temp.fixture_id('account',1),'perf-owner@kiska.invalid','disabled','Kaya Morgan',true) ON CONFLICT DO NOTHING;
 INSERT INTO orgs(id,name,slug,owner_id)
 SELECT pg_temp.fixture_id('org',n),CASE n WHEN 1 THEN 'Atlas Collective' ELSE 'Birch Studio' END,
  CASE n WHEN 1 THEN 'atlas-lab' ELSE 'birch-lab' END,pg_temp.fixture_id('account',1) FROM generate_series(1,2) n ON CONFLICT DO NOTHING;

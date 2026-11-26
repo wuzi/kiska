@@ -26,12 +26,14 @@ export default function RichEditor({
   onChange,
   label,
   autoFocus = false,
+  toolbarBelow = false,
   translate,
 }: {
   initial?: string;
   onChange: (value: string) => void;
   label: string;
   autoFocus?: boolean;
+  toolbarBelow?: boolean;
   translate?: Translate;
 }) {
   const board = useContext(PublicBoardContext);
@@ -113,6 +115,7 @@ export default function RichEditor({
   };
   return (
     <div className="pb-editor">
+      {toolbarBelow && <EditorContent editor={editor} />}
       <div className="pb-tools" role="group" aria-label={label}>
         {actions.map(([key, Icon, action], i) => (
           <button
@@ -149,7 +152,7 @@ export default function RichEditor({
           </button>
         </div>
       )}
-      <EditorContent editor={editor} />
+      {!toolbarBelow && <EditorContent editor={editor} />}
     </div>
   );
 }

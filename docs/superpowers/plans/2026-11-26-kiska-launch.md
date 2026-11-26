@@ -1,4 +1,4 @@
-# PatchBoard implementation plan
+# kiska implementation plan
 
 > **Approved launch plan** — The checklist below records the original build and test proposals. The [launch verification](../../launch-verification.md) records the implementation and executed release checks. [Launch specification](../../spec.md)
 
@@ -6,7 +6,7 @@
 
 **Architecture** — Axum owns authorization, the REST API, public HTML, and same-origin asset delivery for the application. SQLx uses PostgreSQL for the application model, sessions, and durable jobs. A worker from the same release image delivers SMTP mail and performs storage cleanup. Private SeaweedFS handles uploaded media. React uses separate public and workspace entries built by Vite, shadcn/ui controls, TanStack Query, and TanStack Virtual.
 
-**Starting point** — The repository contains a README and `assets/icon.svg`. All implementation paths, commands, defaults, and test fixtures below are proposed additions. The product behaviors and budgets in the specification are approved.
+**Starting point** — The repository contains a README and a starter icon. All implementation paths, commands, defaults, and test fixtures below are proposed additions. The product behaviors and budgets in the specification are approved.
 
 ## Global constraints
 
@@ -30,7 +30,7 @@
 
 | Proposed path | Responsibility |
 | --- | --- |
-| `Cargo.toml`, `server/Cargo.toml`, `server/src/main.rs` | Rust workspace and the `patchboard` binary with `serve`, `worker`, `migrate`, `openapi`, and explicit operator provisioning commands. |
+| `Cargo.toml`, `server/Cargo.toml`, `server/src/main.rs` | Rust workspace and the `kiska` binary with `serve`, `worker`, `migrate`, `openapi`, and explicit operator provisioning commands. |
 | `server/src/{accounts,organizations,boards,guests,posts,media,moderation,updates,mail,operations}/` | Domain-specific routes, transactions, authorization calls, and JSON types. SQL migrations live in `server/migrations/`. |
 | `server/src/public/`, `server/templates/` | Public view models and escaped HTML. A public API and its template use the same visibility query and pagination rules. |
 | `web/src/{public,workspace,operator}/`, `web/src/ui/` | Route entries, forms, board surfaces, and shared presentation components. `web/src/api/generated.ts` holds generated types. |
@@ -59,14 +59,14 @@
 
 ## Delivery sequence
 
-The task order is a viable single-engineer sequence. Each task names the files to create or extend and a testable interface. Start each task with its named acceptance case, run it against the existing implementation, then implement and rerun the same case. For Rust cases use `cargo test -p patchboard --test acceptance <case_name>`. For a browser tag use `npm --prefix web run e2e -- --grep @tag`. The commands and test harness are introduced in task 1. A passing task produces a reviewable increment.
+The task order is a viable single-engineer sequence. Each task names the files to create or extend and a testable interface. Start each task with its named acceptance case, run it against the existing implementation, then implement and rerun the same case. For Rust cases use `cargo test -p kiska --test acceptance <case_name>`. For a browser tag use `npm --prefix web run e2e -- --grep @tag`. The commands and test harness are introduced in task 1. A passing task produces a reviewable increment.
 
 ### 1. Boot a fresh application and establish the API contract
 
 **Files** — `Cargo.toml`, `server/src/{main,app,config}.rs`, `server/migrations/`, `server/tests/{acceptance.rs,cases/boot.rs}`, `web/package.json`, `web/vite.config.ts`, `web/playwright.config.ts`, `web/src/api/`, `Makefile`, `compose.yaml` (PostgreSQL service).
 
 - [ ] In `fresh_boot`, migrate an empty PostgreSQL database twice, start Axum, request `/healthz` and `/readyz`, then disconnect PostgreSQL. Liveness stays healthy and readiness fails. Add a browser smoke test that loads a built entrypoint.
-- [ ] Implement `build_router(state: AppState) -> Router`, CLI mode dispatch, isolated test database setup/teardown, controllable clock, two Vite entries, and stable test scripts. Make `patchboard openapi` export from the same route registrations without needing a live production configuration.
+- [ ] Implement `build_router(state: AppState) -> Router`, CLI mode dispatch, isolated test database setup/teardown, controllable clock, two Vite entries, and stable test scripts. Make `kiska openapi` export from the same route registrations without needing a live production configuration.
 - [ ] Run `fresh_boot`, `make check-contract`, and the browser smoke case. Deliberately change a response schema in the test checkout and verify the drift check fails until generated types are refreshed. Check SQLx offline build metadata against the migrated test schema when using checked queries.
 
 ### 2. Register and recover a creator through the development inbox

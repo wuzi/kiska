@@ -75,6 +75,7 @@ struct BoardDraft {
 #[allow(dead_code)]
 #[derive(ToSchema)]
 struct CommentInput {
+    guest_name: Option<String>,
     body: String,
     parent_id: Option<Uuid>,
 }
@@ -169,6 +170,7 @@ fn fields(names: &str) -> V {
 pub(super) fn generate(mut api: utoipa::openapi::OpenApi) -> String {
     api.merge(WorkspaceContracts::openapi());
     let mut doc = serde_json::to_value(api).expect("serialize contract");
+    doc["info"] = json!({"title":"kiska API","description":"Community feedback boards and roadmaps","version":env!("CARGO_PKG_VERSION")});
     let any = json!({"type":"object","additionalProperties":true});
     let success = json!({"type":"object","properties":{"ok":{"type":"boolean"}}});
     let mut put = |method: &str, path: &str, input: Option<V>, output: V| {

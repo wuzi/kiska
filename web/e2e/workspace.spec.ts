@@ -26,7 +26,7 @@ async function verificationLink(
   email: string,
   flow = "verify",
 ) {
-  const inbox = process.env.PATCHBOARD_INBOX_URL || "http://127.0.0.1:8025";
+  const inbox = process.env.KISKA_INBOX_URL || "http://127.0.0.1:8025";
   let url = "";
   await expect
     .poll(
@@ -170,7 +170,7 @@ test("@account @editor @moderate @updates workspace creator publishes a board an
     .fill("Local draft survives a competing save.");
   const remote = await (await page.request.get(board)).json();
   const saved = await page.request.put(board, {
-    headers: { "X-PatchBoard": "1" },
+    headers: { "X-Kiska": "1" },
     data: {
       ...remote.board,
       revision: remote.revision,
@@ -362,8 +362,8 @@ test("@operator workspace records limit changes and board suspension", async ({
   baseURL,
 }) => {
   test.skip(
-    !process.env.PATCHBOARD_OPERATOR_EMAIL ||
-      !process.env.PATCHBOARD_OPERATOR_PASSWORD,
+    !process.env.KISKA_OPERATOR_EMAIL ||
+      !process.env.KISKA_OPERATOR_PASSWORD,
     "Requires an explicitly provisioned instance operator on the test installation.",
   );
   test.setTimeout(60000);
@@ -371,7 +371,7 @@ test("@operator workspace records limit changes and board suspension", async ({
     org = `Operator test ${suffix}`,
     board = `Access control ${suffix}`;
   await createCreator(page, request, `ops-target-${suffix}@example.test`);
-  const headers = { "X-PatchBoard": "1" };
+  const headers = { "X-Kiska": "1" };
   const owner = await (
     await page.request.post("/api/v1/organizations", {
       headers,
@@ -395,10 +395,10 @@ test("@operator workspace records limit changes and board suspension", async ({
   await op.goto("/app");
   await op
     .getByLabel("Email address")
-    .fill(process.env.PATCHBOARD_OPERATOR_EMAIL!);
+    .fill(process.env.KISKA_OPERATOR_EMAIL!);
   await op
     .getByLabel("Password", { exact: true })
-    .fill(process.env.PATCHBOARD_OPERATOR_PASSWORD!);
+    .fill(process.env.KISKA_OPERATOR_PASSWORD!);
   await op.getByRole("button", { name: "Sign in", exact: true }).click();
   await op.getByRole("link", { name: "Operator", exact: true }).click();
   await op.getByRole("button", { name: "Platform defaults" }).click();
@@ -490,7 +490,7 @@ test("@moderate @updates conflicting staff edits preserve their original revisio
   test.setTimeout(75000);
   const n = crypto.randomUUID().slice(0, 8),
     email = `staff-${n}@example.test`,
-    headers = { "X-PatchBoard": "1" };
+    headers = { "X-Kiska": "1" };
   await createCreator(page, request, email);
   const org = await (
     await page.request.post("/api/v1/organizations", {

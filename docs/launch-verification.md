@@ -1,4 +1,4 @@
-# PatchBoard launch verification
+# kiska launch verification
 
 The production application at `c43e9b74b733c93ef6e143705e1f91eb28c2e103` was tested on 26 November 2026. Both web entry points ran through the bundled gateway against Axum, PostgreSQL, private SeaweedFS, and a development SMTP inbox.
 

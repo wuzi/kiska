@@ -3,7 +3,7 @@ use axum::{
     body::{Body, to_bytes},
     http::Request,
 };
-use patchboard::{AppState, app};
+use kiska::{AppState, app};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tower::ServiceExt;
@@ -44,7 +44,7 @@ impl TestApp {
         let mut req = Request::builder()
             .method(method)
             .uri(path)
-            .header("X-PatchBoard", "1")
+            .header("X-Kiska", "1")
             .header("content-type", "application/json");
         if !cookie.is_empty() {
             req = req.header("cookie", cookie)
@@ -324,6 +324,13 @@ async fn public_feedback_and_snapshots(db: PgPool) {
         .success()
         .html;
     assert!(html.contains("og:title") && html.contains("<strong>expand</strong>"));
+    assert!(html.contains(
+        r#"<meta property="og:image" content="http://localhost/assets/kiska-share.png">"#
+    ));
+    assert!(html.contains(&format!(
+        r#"<meta property="og:url" content="http://localhost/b/studio/ideas/p/{p}-bigger-chat">"#
+    )));
+    assert!(html.contains(r#"<meta property="og:site_name" content="kiska">"#));
     t.call("POST", &move_url, &c, json!({"post_id":p,"action":"hide"}))
         .await
         .success();
@@ -335,6 +342,59 @@ async fn public_feedback_and_snapshots(db: PgPool) {
             .is_empty()
     );
 }
+#[sqlx::test]
+async fn signed_in_contributors_use_account_names_without_team_privileges(db: PgPool) {
+    let t = TestApp::new(db);
+    let (owner, _, _, base) = t.board("crew").await;
+    let (_, visitor) = t.account("visitor").await;
+    let post = t
+        .call(
+            "POST",
+            &format!("{base}/posts"),
+            &visitor,
+            json!({"title":"New suggestion","guest_name":"Pretend team"}),
+        )
+        .await
+        .success();
+    let url = format!("{base}/posts/{}", post.data["id"].as_str().unwrap());
+    for (cookie, body) in [(&owner, "Welcome"), (&visitor, "Thanks")] {
+        t.call(
+            "POST",
+            &format!("{url}/comments"),
+            cookie,
+            json!({"body":body,"guest_name":"Pretend team"}),
+        )
+        .await
+        .success();
+    }
+    let detail = t.call("GET", &url, "", Value::Null).await.success().data;
+    let author = &detail["post"]["author"];
+    assert_eq!(author["name"], "visitor");
+    assert_eq!(author["authenticated"], true);
+    assert_eq!(author["staff"], false);
+    assert_eq!(detail["comments"][0]["author"]["staff"], true);
+    assert_eq!(&detail["comments"][1]["author"], author);
+    assert_eq!(detail["post"]["can_edit"], false);
+    assert_eq!(
+        t.call("GET", &url, &visitor, Value::Null)
+            .await
+            .success()
+            .data["post"]["can_edit"],
+        true
+    );
+    assert_eq!(
+        t.call(
+            "PATCH",
+            &format!("{base}/guest"),
+            &visitor,
+            json!({"name":"Alias"})
+        )
+        .await
+        .status,
+        403
+    );
+}
+
 #[sqlx::test]
 async fn settings_revision_and_recovery(db: PgPool) {
     let t = TestApp::new(db);
@@ -946,7 +1006,7 @@ async fn folder_order_and_expired_closure(db: PgPool) {
         404
     );
     for _ in 0..2 {
-        patchboard::publishing::maintenance(&t.db).await.unwrap();
+        kiska::publishing::maintenance(&t.db).await.unwrap();
     }
     assert_eq!(t.call("GET", &public, "", Value::Null).await.status, 404);
     let after = t

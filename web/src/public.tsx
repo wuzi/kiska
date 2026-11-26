@@ -6,7 +6,7 @@ import type { BoardData } from "./public/types";
 
 declare global {
   interface Window {
-    __PATCHBOARD__?: BoardData;
+    __KISKA__?: BoardData;
   }
 }
 const container =
@@ -15,7 +15,7 @@ async function start() {
   if (!container) return;
   const boardPath = location.pathname.match(/^\/b\/[^/]+\/[^/]+/)?.[0];
   const data =
-    window.__PATCHBOARD__ ??
+    window.__KISKA__ ??
     (boardPath
       ? await api<BoardData>("/api/v1" + boardPath + location.search)
       : null);

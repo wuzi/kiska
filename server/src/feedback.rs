@@ -12,6 +12,10 @@ pub type Params = HashMap<String, String>;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(app_page))
+        .route(
+            "/favicon.ico",
+            get(|| async { Redirect::permanent("/assets/favicon.png") }),
+        )
         .route("/app", get(app_page))
         .route("/app/{*page}", get(app_page))
         .route("/avatar/{seed}", get(avatar))
@@ -66,23 +70,21 @@ pub async fn posts(
     staff: bool,
     q: &Params,
 ) -> Result<(Vec<V>, Option<usize>, i64)> {
-    let status = q
-        .get("status")
-        .filter(|v| !v.is_empty())
-        .map(|v| parse_id(v))
-        .transpose()?;
-    let tag = q
-        .get("tag")
-        .filter(|v| !v.is_empty())
-        .map(|v| parse_id(v))
-        .transpose()?;
+    let selected_ids = |key: &str| -> Result<Option<Vec<Uuid>>> {
+        q.get(key)
+            .filter(|v| !v.is_empty())
+            .map(|v| v.split(',').map(parse_id).collect())
+            .transpose()
+    };
+    let status = selected_ids("status")?;
+    let tag = selected_ids("tag")?;
     let offset = offset(q);
     let limit = q
         .get("limit")
         .and_then(|s| s.parse::<i64>().ok())
         .unwrap_or(30)
         .clamp(1, 50);
-    let where_sql = "p.board_id=$1 AND (p.visibility='published' OR (p.visibility='pending' AND p.guest_id=$2) OR $3) AND p.merged_into IS NULL AND ($4::uuid IS NULL OR p.status_id=$4) AND ($5::uuid IS NULL OR p.tag_id=$5) AND ($6='' OR p.id IN (SELECT id FROM posts WHERE board_id=$1 AND search_terms @@ feedback_prefixes($6))) AND ($7='' OR p.visibility=$7)";
+    let where_sql = "p.board_id=$1 AND (p.visibility='published' OR (p.visibility='pending' AND p.guest_id=$2) OR $3) AND p.merged_into IS NULL AND ($4::uuid[] IS NULL OR p.status_id=ANY($4)) AND ($5::uuid[] IS NULL OR p.tag_id=ANY($5)) AND ($6='' OR p.id IN (SELECT id FROM posts WHERE board_id=$1 AND search_terms @@ feedback_prefixes($6))) AND ($7='' OR p.visibility=$7)";
     let sort = match q.get("sort").map(String::as_str) {
         Some("top") => "p.votes DESC",
         Some("new") => "p.created_at DESC",
@@ -105,8 +107,8 @@ pub async fn posts(
         .bind(b)
         .bind(g)
         .bind(staff)
-        .bind(status)
-        .bind(tag)
+        .bind(&status)
+        .bind(&tag)
         .bind(search)
         .bind(vis)
         .bind(limit + 1)
@@ -142,6 +144,7 @@ pub(crate) fn offset(q: &Params) -> i64 {
 fn card(mut p: V, g: Option<Uuid>) -> V {
     let gid = workspace::opt_id(&p, "guest_id").ok().flatten();
     p["author"] = author(gid, p["guest_name"].as_str(), p["staff_name"].as_str());
+    p["author"]["authenticated"] = json!(p["authenticated"] == true || p["staff_name"].is_string());
     p["can_edit"] =
         json!(g.is_some() && gid == g && p["is_default"] == true && p["visibility"] != "hidden");
     p["excerpt"] = json!(
@@ -156,6 +159,7 @@ fn card(mut p: V, g: Option<Uuid>) -> V {
         m.remove("account_id");
         m.remove("guest_name");
         m.remove("staff_name");
+        m.remove("authenticated");
     }
     p
 }
@@ -183,7 +187,7 @@ pub async fn detail(
     );
     post["body_html"] = json!(render(val(&post, "body")));
     post["media"]=V::Array(sqlx::query_scalar("SELECT jsonb_build_object('id',id,'url','/api/v1/media/'||id) FROM media WHERE post_id=$1 AND ready AND bound ORDER BY position").bind(p).fetch_all(&s.db).await?);
-    let mut comments:Vec<V>=sqlx::query_scalar("SELECT jsonb_build_object('id',c.id,'revision',c.revision,'parent_id',c.parent_id,'body',CASE WHEN c.hidden AND NOT $3 THEN '' ELSE c.body END,'hidden',c.hidden,'created_at',c.created_at,'guest_id',c.guest_id,'author',jsonb_build_object('name',coalesce(c.staff_name,g.name,''),'avatar_url','/avatar/'||g.id,'staff',c.staff_name IS NOT NULL),'can_edit',coalesce(c.guest_id=$2,false) AND NOT c.hidden,'likes',(SELECT count(*) FROM likes WHERE comment_id=c.id),'liked',EXISTS(SELECT 1 FROM likes WHERE comment_id=c.id AND guest_id=$2)) FROM comments c LEFT JOIN guests g ON g.id=c.guest_id WHERE post_id=$1 AND (NOT hidden OR $3 OR EXISTS(SELECT 1 FROM comments r WHERE r.parent_id=c.id AND NOT r.hidden)) ORDER BY c.created_at,c.id LIMIT 31 OFFSET $4").bind(p).bind(g).bind(staff).bind(offset(q)).fetch_all(&s.db).await?;
+    let mut comments:Vec<V>=sqlx::query_scalar("SELECT jsonb_build_object('id',c.id,'revision',c.revision,'parent_id',c.parent_id,'body',CASE WHEN c.hidden AND NOT $3 THEN '' ELSE c.body END,'hidden',c.hidden,'created_at',c.created_at,'guest_id',c.guest_id,'author',jsonb_build_object('name',coalesce(c.staff_name,g.name,''),'avatar_url','/avatar/'||g.id,'staff',c.staff_name IS NOT NULL,'authenticated',g.account_id IS NOT NULL OR c.staff_name IS NOT NULL),'can_edit',coalesce(c.guest_id=$2,false) AND NOT c.hidden,'likes',(SELECT count(*) FROM likes WHERE comment_id=c.id),'liked',EXISTS(SELECT 1 FROM likes WHERE comment_id=c.id AND guest_id=$2)) FROM comments c LEFT JOIN guests g ON g.id=c.guest_id WHERE post_id=$1 AND (NOT hidden OR $3 OR EXISTS(SELECT 1 FROM comments r WHERE r.parent_id=c.id AND NOT r.hidden)) ORDER BY c.created_at,c.id LIMIT 31 OFFSET $4").bind(p).bind(g).bind(staff).bind(offset(q)).fetch_all(&s.db).await?;
     let next = (comments.len() > 30).then_some(offset(q) + 30);
     comments.truncate(30);
     for c in &mut comments {
@@ -239,7 +243,13 @@ pub async fn board_data(
         == "roadmap"
         || staff
     {
-        for st in statuses.iter().filter(|s| s["on_roadmap"] == true) {
+        for st in statuses.iter().filter(|s| {
+            s["on_roadmap"] == true
+                && (staff
+                    || q.get("status").is_none_or(|ids| {
+                        ids.is_empty() || ids.split(',').any(|id| id == val(s, "id"))
+                    }))
+        }) {
             let mut col = q.clone();
             col.insert("status".into(), val(st, "id").into());
             col.insert("sort".into(), "top".into());
@@ -253,7 +263,7 @@ pub async fn board_data(
         settings.remove("manual_order");
     }
     Ok(
-        json!({"board":board,"settings":board["settings"],"appearance":board["appearance"],"revision":board["revision"],"statuses":statuses,"tags":tags,"posts":posts,"next_cursor":next,"total":total,"columns":cols,"role":access.role,"locale":if pt{"pt-BR"}else{"en"},"updates":updates,"updates_next_cursor":updates_next_cursor}),
+        json!({"board":board,"settings":board["settings"],"appearance":board["appearance"],"revision":board["revision"],"statuses":statuses,"tags":tags,"posts":posts,"next_cursor":next,"total":total,"columns":cols,"authenticated":access.account_id.is_some(),"role":access.role,"locale":if pt{"pt-BR"}else{"en"},"updates":updates,"updates_next_cursor":updates_next_cursor}),
     )
 }
 fn shell(
@@ -270,17 +280,45 @@ fn shell(
         .replace('>', "\\u003e")
         .replace('&', "\\u0026");
     Html(format!(
-        r#"<!doctype html><html lang="{locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{}</title>{head}<link rel="stylesheet" href="/assets/{entry}.css"></head><body><div id="root">{content}</div><script>window.__PATCHBOARD__={boot}</script><script type="module" src="/assets/{entry}.js"></script></body></html>"#,
+        r#"<!doctype html><html lang="{locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{}</title><link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon.png"><link rel="apple-touch-icon" href="/assets/kiska.png">{head}<link rel="stylesheet" href="/assets/{entry}.css"></head><body><div id="root">{content}</div><script>window.__KISKA__={boot}</script><script type="module" src="/assets/{entry}.js"></script></body></html>"#,
         esc(title)
     ))
 }
-async fn app_page() -> Html<String> {
+const BRAND_DESCRIPTION: &str =
+    "Collect community feedback, vote on ideas, and follow the roadmap.";
+
+fn share_tags(
+    origin: &str,
+    path: &str,
+    title: &str,
+    description: &str,
+    media: Option<&str>,
+) -> String {
+    let image = media.unwrap_or("/assets/kiska-share.png");
+    let dimensions = if media.is_none() {
+        r#"<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="kiska, a great kiskadee with a bright yellow chest">"#
+    } else {
+        ""
+    };
+    format!(
+        r##"<link rel="canonical" href="{url}"><meta property="og:url" content="{url}"><meta property="og:type" content="website"><meta property="og:site_name" content="kiska"><meta property="og:title" content="{title}"><meta name="description" content="{description}"><meta property="og:description" content="{description}"><meta property="og:image" content="{image}">{dimensions}<meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#fbd331">"##,
+        url = esc(&format!("{origin}{path}")),
+        title = esc(title),
+        description = esc(description),
+        image = esc(&format!("{origin}{image}"))
+    )
+}
+async fn app_page(State(s): State<AppState>) -> Html<String> {
+    let head = format!(
+        r#"<meta name="robots" content="noindex">{}"#,
+        share_tags(&s.origin, "/", "kiska", BRAND_DESCRIPTION, None)
+    );
     shell(
         "workspace",
-        "PatchBoard",
+        "kiska",
         "en",
-        "<meta name=\"robots\" content=\"noindex\">",
-        "<main aria-busy=\"true\" aria-label=\"PatchBoard\"></main>",
+        &head,
+        r#"<main aria-busy="true" aria-label="kiska"></main>"#,
         &V::Null,
     )
 }
@@ -319,7 +357,7 @@ async fn page(
         esc(&description)
     );
     let mut path = base.clone();
-    let mut image = String::new();
+    let mut image = None;
     let show_body = data["settings"]["board_fields"]["body"] != false;
     let show_images = data["settings"]["board_fields"]["images"] != false;
     if let Some(raw) = p {
@@ -339,12 +377,8 @@ async fn page(
         if show_body {
             description = val(post, "excerpt").into();
         }
-        if let Some(url) = post["media"][0]["url"].as_str().filter(|_| show_images) {
-            image = format!(
-                "<meta property=\"og:image\" content=\"{}{}\">",
-                esc(&s.origin),
-                esc(url)
-            );
+        if show_images && post["visibility"] == "published" {
+            image = post["media"][0]["url"].as_str().map(str::to_owned);
         }
         body = format!(
             "<main class=\"pb-server\"><h1>{}</h1><article>{}</article>",
@@ -420,12 +454,18 @@ async fn page(
     } else {
         "noindex,nofollow"
     };
+    let description = if description.trim().is_empty() {
+        if pt(h, q) {
+            "Compartilhe ideias, vote em sugestões e acompanhe o roadmap."
+        } else {
+            BRAND_DESCRIPTION
+        }
+    } else {
+        &description
+    };
     let head = format!(
-        "<link rel=\"canonical\" href=\"{}{}\"><meta name=\"robots\" content=\"{index}\"><meta property=\"og:title\" content=\"{}\"><meta property=\"og:description\" content=\"{}\">{image}",
-        esc(&s.origin),
-        esc(&path),
-        esc(&title),
-        esc(&description)
+        r#"<meta name="robots" content="{index}">{}"#,
+        share_tags(&s.origin, &path, &title, description, image.as_deref())
     );
     let mut res =
         shell("public", &title, val(&data, "locale"), &head, &body, &data).into_response();
@@ -483,6 +523,24 @@ async fn participant(
     };
     Ok((g, c, name))
 }
+async fn save_guest_name(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    guest: Uuid,
+    input: &V,
+) -> Result<()> {
+    if let Some(name) = input.get("guest_name").and_then(V::as_str) {
+        let name = name.trim();
+        if name.chars().count() > 40 {
+            return Err(Error::bad("invalid_guest_name"));
+        }
+        sqlx::query("UPDATE guests SET name=$2 WHERE id=$1 AND account_id IS NULL")
+            .bind(guest)
+            .bind(name)
+            .execute(&mut **tx)
+            .await?;
+    }
+    Ok(())
+}
 pub async fn write_post(
     s: &AppState,
     b: Uuid,
@@ -518,9 +576,10 @@ pub async fn write_post(
     } else {
         "published"
     };
+    save_guest_name(&mut tx, g, j).await?;
     let pid:Uuid=sqlx::query_scalar("INSERT INTO posts(board_id,guest_id,account_id,staff_name,title,slug,body,status_id,tag_id,visibility) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id").bind(b).bind(g).bind(account).bind(staff).bind(&title).bind(slug(&title)).bind(body).bind(status).bind(tag).bind(visibility).fetch_one(&mut *tx).await?;
     media::bind_post(&mut tx, b, pid, Some(g), account, &media).await?;
-    sqlx::query("INSERT INTO outbox(email,subject,body,board_id,staff_id,event_key) SELECT coalesce(a.notification_email,a.email),'PatchBoard · New submission',$2,$1,a.id,'post:'||$3::text||':'||a.id FROM boards b JOIN memberships m ON m.org_id=b.org_id JOIN accounts a ON a.id=m.account_id WHERE b.id=$1 AND m.alerts AND a.closed_at IS NULL").bind(b).bind(&title).bind(pid.to_string()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO outbox(email,subject,body,board_id,staff_id,event_key) SELECT coalesce(a.notification_email,a.email),'kiska · New submission',$2,$1,a.id,'post:'||$3::text||':'||a.id FROM boards b JOIN memberships m ON m.org_id=b.org_id JOIN accounts a ON a.id=m.account_id WHERE b.id=$1 AND m.alerts AND a.closed_at IS NULL").bind(b).bind(&title).bind(pid.to_string()).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok((
         json!({"id":pid,"slug":slug(&title),"title":title,"visibility":visibility}),
@@ -549,6 +608,7 @@ pub async fn write_comment(
     let mut tx = s.db.begin().await?;
     sqlx::query("SELECT id FROM posts WHERE board_id=$1 AND id=$2 AND NOT locked AND merged_into IS NULL AND (visibility='published' OR visibility='pending' AND (guest_id=$3 OR $4)) FOR SHARE").bind(b).bind(p).bind(g).bind(name.is_some()).fetch_one(&mut *tx).await?;
     let parent=match workspace::opt_id(j,"parent_id")?{Some(id)=>Some(sqlx::query_scalar::<_,Uuid>("SELECT coalesce(parent_id,id) FROM comments WHERE id=$1 AND post_id=$2 AND NOT hidden").bind(id).bind(p).fetch_one(&mut *tx).await?),None=>None};
+    save_guest_name(&mut tx, g, j).await?;
     let cid:Uuid=sqlx::query_scalar("INSERT INTO comments(post_id,guest_id,staff_name,parent_id,body) VALUES($1,$2,$3,$4,$5) RETURNING id").bind(p).bind(g).bind(name).bind(parent).bind(&body).fetch_one(&mut *tx).await?;
     tx.commit().await?;
     Ok((json!({"id":cid,"body":body}), c))
@@ -703,6 +763,9 @@ async fn public_action(
             }
         }
         ("PATCH", ["guest"]) => {
+            if ac.account_id.is_some() {
+                return Err(Error::forbidden());
+            }
             let (g, ck, _) = participant(&s, b, &h, "profile", 60).await?;
             c = ck;
             let name = required(&j, "name", 0, 40)?;
@@ -714,7 +777,7 @@ async fn public_action(
             result = author(Some(g), Some(&name), None);
         }
         ("POST", ["guest", "recovery"]) => {
-            if ac.role.is_some() {
+            if ac.account_id.is_some() {
                 return Err(Error::bad("use_account_recovery"));
             }
             let (g, ck, _) = participant(&s, b, &h, "recovery", 20).await?;
@@ -728,11 +791,14 @@ async fn public_action(
             result = json!({"token":t,"url":format!("{}/b/{o}/{n}#recover={t}",s.origin)});
         }
         ("POST", ["guest", "recover"]) => {
+            if ac.account_id.is_some() {
+                return Err(Error::bad("use_account_recovery"));
+            }
             rate(&s.db, &h, "guest_recover", 30, 900).await?;
             let t = token();
             let mut tx = s.db.begin().await?;
             let g: Uuid = sqlx::query_scalar(
-                "UPDATE guests SET recovery=NULL WHERE org_id=$1 AND staff_account_id IS NULL AND recovery=$2 RETURNING id",
+                "UPDATE guests SET recovery=NULL WHERE org_id=$1 AND account_id IS NULL AND recovery=$2 RETURNING id",
             )
             .bind(ac.org_id)
             .bind(hash(val(&j, "token")))

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import {
   Link2,
@@ -12,7 +12,17 @@ import {
 } from "lucide-react";
 import { useBoard } from "./context";
 import { dateString } from "./i18n";
-import { Avatar, Body, Chip, ErrorBox, Modal, PagedList, Vote } from "./ui";
+import {
+  AuthorBadge,
+  GuestNameField,
+  Avatar,
+  Body,
+  Chip,
+  ErrorBox,
+  Modal,
+  PagedList,
+  Vote,
+} from "./ui";
 import { Editor } from "./composer/PostComposer";
 import { postPath, type Post, type Comment } from "./types";
 import { ApiError } from "../api/client";
@@ -28,12 +38,19 @@ function CommentForm({
   original?: Comment;
   close: () => void;
 }) {
-  const { t, adapter, refresh, notify } = useBoard();
+  const { t, adapter, refresh, notify, preview, data } = useBoard();
+  const [guestName, setGuestName] = useState<string>();
   const [body, setBody] = useState(original?.body ?? "");
   const save = useMutation({
     mutationFn: async () => {
       if (body.length > 5000) throw new Error(t("bodyLimit"));
-      await adapter.comment(postId, body, parentId ?? null, original?.id);
+      await adapter.comment(
+        postId,
+        body,
+        parentId ?? null,
+        original?.id,
+        guestName,
+      );
     },
     onSuccess: async () => {
       await refresh();
@@ -53,11 +70,25 @@ function CommentForm({
       <Suspense
         fallback={<div className="pb-editor-placeholder">{t("loading")}</div>}
       >
-        <Editor autoFocus label={label} initial={body} onChange={setBody} />
+        <Editor
+          autoFocus
+          toolbarBelow
+          label={label}
+          initial={body}
+          onChange={setBody}
+        />
       </Suspense>
       <ErrorBox error={save.error} />
       <div className="pb-form-actions">
-        <button type="button" className="pb-neutral" onClick={close}>
+        {!original && (preview || !data.authenticated) && (
+          <GuestNameField value={guestName} onChange={setGuestName} />
+        )}
+        <button
+          type="button"
+          className="pb-neutral"
+          disabled={save.isPending}
+          onClick={close}
+        >
           {t("cancel")}
         </button>
         <button
@@ -101,7 +132,7 @@ function CommentRow({ c, post }: { c: Comment; post: Post }) {
           <>
             <div className="pb-byline">
               <b>{c.author?.name || t("anonymous")}</b>
-              {c.author?.staff && <span className="pb-team">{t("team")}</span>}
+              <AuthorBadge guest={c.author} />
               <time>{dateString(c.created_at, locale)}</time>
             </div>
             <Body html={c.body_html} text={c.body} />
@@ -196,6 +227,7 @@ export function PostDetail({
   const [compose, setCompose] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [copyFallback, setCopyFallback] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
   const seed = data.detail?.post.id === known.id ? data.detail : null;
   const details = useInfiniteQuery({
     staleTime: 0,
@@ -239,7 +271,28 @@ export function PostDetail({
   }, [post, data.board, details.data, preview]);
   return (
     <Modal
-      wide
+      discussion
+      headerActions={
+        !absent &&
+        !preview && (
+          <button
+            className="pb-icon"
+            aria-label={t("share")}
+            title={t("share")}
+            onClick={async () => {
+              const url = location.origin + postPath(data.board, post);
+              try {
+                await navigator.clipboard.writeText(url);
+                notify(t("copied"));
+              } catch {
+                setCopyFallback(url);
+              }
+            }}
+          >
+            <Link2 size={15} />
+          </button>
+        )
+      }
       title={absent ? t("unavailable") : post.title || t("details")}
       onClose={onClose}
       focusBack={restoreFocus}
@@ -249,112 +302,128 @@ export function PostDetail({
           <ErrorBox error={details.error} />
         </div>
       ) : (
-        <div className="pb-modal-body pb-detail" data-detail={post.id}>
-          <div className="pb-detail-meta">
-            {status && <Chip item={status} status />}
-            {tag && fields.tag !== false && <Chip item={tag} />}
-            {(post.pending || post.visibility === "pending") && (
-              <span className="pb-pending">{t("pending")}</span>
-            )}
-            {post.locked && <LockKeyhole size={14} aria-label={t("locked")} />}
-          </div>
-          {fields.author !== false && (
-            <div className="pb-byline">
-              <Avatar guest={post.author} />
-              <b>{post.author?.name || t("anonymous")}</b>
-              {post.author?.staff && (
-                <span className="pb-team">{t("team")}</span>
+        <div className="pb-detail" data-detail={post.id}>
+          <div className="pb-detail-summary">
+            <div className="pb-detail-meta">
+              <Vote post={post} />
+              {status && <Chip item={status} status />}
+              {tag && fields.tag !== false && <Chip item={tag} />}
+              {(post.pending || post.visibility === "pending") && (
+                <span className="pb-pending">{t("pending")}</span>
               )}
-              <time>{dateString(post.created_at, locale)}</time>
+              {post.locked && (
+                <LockKeyhole size={14} aria-label={t("locked")} />
+              )}
             </div>
-          )}
-          {fields.body !== false && (
-            <Body html={post.body_html} text={post.body || post.excerpt} />
-          )}
-          {fields.images !== false && !!post.media?.length && (
-            <div className="pb-detail-media">
-              {post.media.map((m) => (
-                <a key={m.id} href={m.url} target="_blank" rel="noreferrer">
-                  <img loading="lazy" src={m.url} alt={t("attachment")} />
-                </a>
-              ))}
-            </div>
-          )}
-          <div className="pb-detail-actions">
-            <Vote post={post} />
-            <button
-              className="pb-neutral"
-              onClick={async () => {
-                const url = location.origin + postPath(data.board, post);
-                try {
-                  await navigator.clipboard.writeText(url);
-                  notify(t("copied"));
-                } catch {
-                  setCopyFallback(url);
-                }
-              }}
-            >
-              <Link2 size={15} />
-              {t("share")}
-            </button>
-            {post.can_edit && details.data && (
-              <>
-                <button
-                  className="pb-icon"
-                  aria-label={t("edit")}
-                  onClick={() => openComposer(undefined, post)}
-                >
-                  <Pencil size={16} />
-                </button>
-                <button
-                  className="pb-icon"
-                  aria-label={t("remove")}
-                  onClick={() => setConfirm(true)}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </>
+            {fields.author !== false && (
+              <div className="pb-byline">
+                <Avatar guest={post.author} />
+                <b>{post.author?.name || t("anonymous")}</b>
+                <AuthorBadge guest={post.author} />
+                <time>{dateString(post.created_at, locale)}</time>
+              </div>
+            )}
+            {copyFallback && (
+              <input
+                aria-label={t("share")}
+                readOnly
+                value={copyFallback}
+                onFocus={(e) => e.target.select()}
+                autoFocus
+              />
             )}
           </div>
-          {copyFallback && (
-            <input
-              aria-label={t("share")}
-              readOnly
-              value={copyFallback}
-              onFocus={(e) => e.target.select()}
-              autoFocus
-            />
-          )}
-          {confirm && (
-            <div className="pb-confirm">
-              {t("confirmDelete")}
-              <button className="pb-neutral" onClick={() => setConfirm(false)}>
-                {t("cancel")}
-              </button>
-              <button
-                className="pb-danger"
-                disabled={remove.isPending}
-                onClick={() => remove.mutate()}
-              >
-                {t("confirmRemove")}
-              </button>
+          <div className="pb-detail-scroll" ref={scrollRef}>
+            <div className="pb-modal-body pb-detail-content">
+              {fields.body !== false && (
+                <Body html={post.body_html} text={post.body || post.excerpt} />
+              )}
+              {fields.images !== false && !!post.media?.length && (
+                <div className="pb-detail-media">
+                  {post.media.map((m) => (
+                    <a key={m.id} href={m.url} target="_blank" rel="noreferrer">
+                      <img loading="lazy" src={m.url} alt={t("attachment")} />
+                    </a>
+                  ))}
+                </div>
+              )}
+              {post.can_edit && details.data && (
+                <div className="pb-detail-actions">
+                  <button
+                    className="pb-icon"
+                    aria-label={t("edit")}
+                    onClick={() => openComposer(undefined, post)}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    className="pb-icon"
+                    aria-label={t("remove")}
+                    onClick={() => setConfirm(true)}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              )}
+              {confirm && (
+                <div className="pb-confirm">
+                  {t("confirmDelete")}
+                  <button
+                    className="pb-neutral"
+                    onClick={() => setConfirm(false)}
+                  >
+                    {t("cancel")}
+                  </button>
+                  <button
+                    className="pb-danger"
+                    disabled={remove.isPending}
+                    onClick={() => remove.mutate()}
+                  >
+                    {t("confirmRemove")}
+                  </button>
+                </div>
+              )}
+              {!!post.team_response && (
+                <aside className="pb-team-response">
+                  <strong>
+                    <BadgeCheck size={17} />
+                    {t("teamResponse")}
+                  </strong>
+                  <Body text={post.team_response} />
+                </aside>
+              )}
+              <ErrorBox error={details.error || remove.error} />
+              <div className="pb-discussion">
+                <h3>
+                  <MessageCircle size={19} />
+                  {t("discussion")} <span>{post.comment_count ?? 0}</span>
+                </h3>
+                {details.isPending ? (
+                  <p className="pb-help">{t("loadingDiscussion")}</p>
+                ) : !rows.length ? (
+                  <p className="pb-help">{t("noComments")}</p>
+                ) : (
+                  <PagedList
+                    label={t("comments")}
+                    items={rows}
+                    render={(c) => <CommentRow c={c} post={post} />}
+                    estimate={95}
+                    scrollRef={scrollRef}
+                  />
+                )}
+                {details.hasNextPage && (
+                  <button
+                    className="pb-more"
+                    disabled={details.isFetchingNextPage}
+                    onClick={() => void details.fetchNextPage()}
+                  >
+                    {t("loadMore")}
+                  </button>
+                )}
+              </div>
             </div>
-          )}
-          {!!post.team_response && (
-            <aside className="pb-team-response">
-              <strong>
-                <BadgeCheck size={17} />
-                {t("teamResponse")}
-              </strong>
-              <Body text={post.team_response} />
-            </aside>
-          )}
-          <ErrorBox error={details.error || remove.error} />
-          <div className="pb-discussion">
-            <h3>
-              <MessageCircle size={19} />
-              {t("discussion")} <span>{post.comment_count ?? 0}</span>
-            </h3>
+          </div>
+          <footer className="pb-comment-footer">
             {post.locked ? (
               <p className="pb-help">{t("locked")}</p>
             ) : compose ? (
@@ -367,28 +436,7 @@ export function PostDetail({
                 {t("writeComment")}…
               </button>
             )}
-            {details.isPending ? (
-              <p className="pb-help">{t("loadingDiscussion")}</p>
-            ) : !rows.length ? (
-              <p className="pb-help">{t("noComments")}</p>
-            ) : (
-              <PagedList
-                label={t("comments")}
-                items={rows}
-                render={(c) => <CommentRow c={c} post={post} />}
-                estimate={95}
-              />
-            )}
-            {details.hasNextPage && (
-              <button
-                className="pb-more"
-                disabled={details.isFetchingNextPage}
-                onClick={() => void details.fetchNextPage()}
-              >
-                {t("loadMore")}
-              </button>
-            )}
-          </div>
+          </footer>
         </div>
       )}
     </Modal>

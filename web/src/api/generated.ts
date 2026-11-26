@@ -3233,6 +3233,7 @@ export interface components {
             verified: boolean;
         };
         ActorSummary: {
+            authenticated: boolean;
             avatar_url?: string | null;
             name: string;
             staff: boolean;
@@ -3293,6 +3294,7 @@ export interface components {
         };
         CommentInput: {
             body: string;
+            guest_name?: string | null;
             /** Format: uuid */
             parent_id?: string | null;
         };
@@ -3377,6 +3379,7 @@ export interface components {
         };
         PostInput: {
             body?: string;
+            guest_name?: string | null;
             media_ids?: string[];
             /** Format: uuid */
             status_id?: string | null;
@@ -3414,6 +3417,7 @@ export interface components {
             weekly_votes: number;
         };
         PublicPage: {
+            authenticated: boolean;
             board: components["schemas"]["BoardSummary"];
             columns: components["schemas"]["RoadmapColumn"][];
             locale: string;

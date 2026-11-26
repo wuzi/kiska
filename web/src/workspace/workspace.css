@@ -332,15 +332,6 @@ body:has(.ws-root) {
   color: #30483a;
   letter-spacing: -0.025em;
 }
-.ws-brand > span {
-  border-radius: 7px;
-  background: #2a5c40;
-  display: grid;
-  place-items: center;
-  width: 25px;
-  height: 25px;
-  color: #fff;
-}
 .ws-rail-foot > .ws-brand {
   padding: 7px 9px;
   font-size: 12px;
@@ -842,8 +833,8 @@ body:has(.ws-root) {
   font-weight: 600;
   line-height: 1;
 }
-.ws-auth-mark span span {
-  color: #71ae7b;
+.ws-auth-mark:has(img) {
+  background: #fff2bb;
 }
 .ws-auth-box h1 {
   font-size: 27px;

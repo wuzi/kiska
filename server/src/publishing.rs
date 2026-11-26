@@ -142,7 +142,7 @@ async fn mail_page(Path((action, _)): Path<(String, String)>) -> Result<Html<Str
         return Err(Error::not_found());
     }
     Ok(Html(format!(
-        "<!doctype html><meta name=referrer content=no-referrer><title>PatchBoard</title><main><h1>PatchBoard</h1><button id=go>{}</button><p id=message></p></main><script>go.onclick=async()=>{{const r=await fetch(location.href,{{method:'POST',headers:{{'X-PatchBoard':'1'}}}});message.textContent=r.ok?'Done':'Link unavailable';go.disabled=r.ok}}</script>",
+        "<!doctype html><meta name=referrer content=no-referrer><link rel=icon href=/assets/favicon.png><title>kiska</title><main><h1>kiska</h1><button id=go>{}</button><p id=message></p></main><script>go.onclick=async()=>{{const r=await fetch(location.href,{{method:'POST',headers:{{'X-Kiska':'1'}}}});message.textContent=r.ok?'Done':'Link unavailable';go.disabled=r.ok}}</script>",
         if action == "confirm" {
             "Confirm subscription / Confirmar inscrição"
         } else {
@@ -350,7 +350,7 @@ pub async fn work_once(db: &PgPool) -> anyhow::Result<bool> {
             .from(std::env::var("SMTP_FROM")?.parse()?)
             .to(r.get::<String, _>("email").parse()?)
             .subject(r.get::<String, _>("subject"))
-            .message_id(Some(format!("<{id}@patchboard>")));
+            .message_id(Some(format!("<{id}@kiska>")));
         if let Some(token) = r.get::<Option<String>, _>("unsub") {
             use lettre::message::header::{HeaderName, HeaderValue};
             let origin = std::env::var("PUBLIC_ORIGIN")?;

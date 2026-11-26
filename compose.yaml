@@ -1,17 +1,17 @@
-name: patchboard
+name: kiska
 x-storage: &storage
   AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?configure the private storage access key}
   AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?configure the private storage secret}
   AWS_REGION: us-east-1
   AWS_DEFAULT_REGION: us-east-1
-  S3_BUCKET: patchboard-media
+  S3_BUCKET: ${S3_BUCKET:-kiska-media}
   S3_ENDPOINT: http://storage:8333
 x-env: &env
   <<: *storage
   PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?configure the public origin}
   S3_PUBLIC_ORIGIN: ${PUBLIC_ORIGIN}
   S3_GRANT_SECONDS: ${S3_GRANT_SECONDS:-300}
-  DATABASE_URL: postgres://patchboard:${POSTGRES_PASSWORD:?configure a URL-safe database password}@db:5432/patchboard
+  DATABASE_URL: postgres://${POSTGRES_USER:-kiska}:${POSTGRES_PASSWORD:?configure a URL-safe database password}@db:5432/${POSTGRES_DB:-kiska}
   SMTP_HOST: ${SMTP_HOST:?configure the SMTP relay}
   SMTP_PORT: ${SMTP_PORT:-587}
   SMTP_FROM: ${SMTP_FROM:?configure the sender}
@@ -20,22 +20,22 @@ x-env: &env
   SMTP_TLS: ${SMTP_TLS:-starttls}
   IP_HASH_KEY: ${IP_HASH_KEY:?configure a stable private abuse-signal key}
   TRUSTED_PROXY_IPS: ${PROXY_IP:-10.201.91.10}
-  PATCHBOARD_RATE_IDENTITY: ${PATCHBOARD_RATE_IDENTITY:-20}
-  PATCHBOARD_RATE_CREATE_ORG: ${PATCHBOARD_RATE_CREATE_ORG:-20}
-  PATCHBOARD_RATE_CREATE_BOARD: ${PATCHBOARD_RATE_CREATE_BOARD:-60}
-  PATCHBOARD_RATE_REGISTER: ${PATCHBOARD_RATE_REGISTER:-30}
-  PATCHBOARD_RATE_LOGIN: ${PATCHBOARD_RATE_LOGIN:-15}
-  PATCHBOARD_RATE_FORGOT: ${PATCHBOARD_RATE_FORGOT:-30}
-  PATCHBOARD_RATE_POST: ${PATCHBOARD_RATE_POST:-5}
-  PATCHBOARD_RATE_COMMENT: ${PATCHBOARD_RATE_COMMENT:-20}
-  PATCHBOARD_RATE_VOTE: ${PATCHBOARD_RATE_VOTE:-120}
-  PATCHBOARD_RATE_LIKE: ${PATCHBOARD_RATE_LIKE:-120}
-  PATCHBOARD_RATE_UPLOAD: ${PATCHBOARD_RATE_UPLOAD:-60}
-  PATCHBOARD_RATE_SUBSCRIBE: ${PATCHBOARD_RATE_SUBSCRIBE:-20}
+  KISKA_RATE_IDENTITY: ${KISKA_RATE_IDENTITY:-20}
+  KISKA_RATE_CREATE_ORG: ${KISKA_RATE_CREATE_ORG:-20}
+  KISKA_RATE_CREATE_BOARD: ${KISKA_RATE_CREATE_BOARD:-60}
+  KISKA_RATE_REGISTER: ${KISKA_RATE_REGISTER:-30}
+  KISKA_RATE_LOGIN: ${KISKA_RATE_LOGIN:-15}
+  KISKA_RATE_FORGOT: ${KISKA_RATE_FORGOT:-30}
+  KISKA_RATE_POST: ${KISKA_RATE_POST:-5}
+  KISKA_RATE_COMMENT: ${KISKA_RATE_COMMENT:-20}
+  KISKA_RATE_VOTE: ${KISKA_RATE_VOTE:-120}
+  KISKA_RATE_LIKE: ${KISKA_RATE_LIKE:-120}
+  KISKA_RATE_UPLOAD: ${KISKA_RATE_UPLOAD:-60}
+  KISKA_RATE_SUBSCRIBE: ${KISKA_RATE_SUBSCRIBE:-20}
   SUPPORT_URL: ${SUPPORT_URL:-}
   POLICY_URL: ${POLICY_URL:-}
 x-service: &service
-  image: ${PATCHBOARD_IMAGE:-patchboard-rs:local}
+  image: ${KISKA_IMAGE:-kiska:local}
   build: .
   environment: *env
   restart: unless-stopped
@@ -47,12 +47,12 @@ services:
     image: postgres:15.19-bookworm@sha256:19b8449e2187e8a174b40c8832a7ed9da45813b74c2779b1c614e7e7d0ee47f0
     restart: unless-stopped
     environment:
-      POSTGRES_DB: patchboard
-      POSTGRES_USER: patchboard
+      POSTGRES_DB: ${POSTGRES_DB:-kiska}
+      POSTGRES_USER: ${POSTGRES_USER:-kiska}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes: [db-data:/var/lib/postgresql/data]
     healthcheck:
-      test: [CMD-SHELL, pg_isready -U patchboard -d patchboard]
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
       interval: 5s
       timeout: 3s
       retries: 25
@@ -101,6 +101,7 @@ services:
     image: nginx:1.30.2-alpine@sha256:5f979dcfed4ce6461873f087e8c980d6e29b084b9e8776d9704a7e989b5f4898
     restart: unless-stopped
     environment:
+      S3_BUCKET: ${S3_BUCKET:-kiska-media}
       HTTPS_PROXY_IP: ${HTTPS_PROXY_IP:-10.201.91.1}
     networks:
       edge: {ipv4_address: "${PROXY_IP:-10.201.91.10}"}
@@ -116,12 +117,12 @@ services:
   ops:
     profiles: [tools]
     build: ops
-    image: ${PATCHBOARD_OPS_IMAGE:-patchboard-rs-ops:local}
+    image: ${KISKA_OPS_IMAGE:-kiska-ops:local}
     environment:
       <<: *storage
       PGHOST: db
-      PGDATABASE: patchboard
-      PGUSER: patchboard
+      PGDATABASE: ${POSTGRES_DB:-kiska}
+      PGUSER: ${POSTGRES_USER:-kiska}
       PGPASSWORD: ${POSTGRES_PASSWORD}
 networks:
   edge:

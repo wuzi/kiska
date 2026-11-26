@@ -9,7 +9,7 @@ import {
   type FormEvent,
 } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { X, LoaderCircle, Layers3 } from "lucide-react";
+import { X, LoaderCircle } from "lucide-react";
 import { api, json, ApiError } from "../api/client";
 import { apiPath, errorText, type Locale, type T } from "./model";
 export const LocaleContext = createContext<Locale>("en");
@@ -22,10 +22,8 @@ export const write = <T,>(path: string, method: string, body?: unknown) =>
   json<T>(apiPath(path), method, body);
 export const Brand = () => (
   <span className="ws-brand">
-    <span>
-      <Layers3 size={18} />
-    </span>
-    PatchBoard
+    <img src="/assets/kiska.png" alt="" width="32" height="32" />
+    kiska
   </span>
 );
 export function Msg({

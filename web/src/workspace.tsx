@@ -363,7 +363,7 @@ function Shell({
                     onDrop={(e) => {
                       e.preventDefault();
                       const id = e.dataTransfer.getData(
-                        "text/patchboard-board",
+                        "text/kiska-board",
                       );
                       if (data.boards.some((b) => b.id === id))
                         void job.run(async () => {

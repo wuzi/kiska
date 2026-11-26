@@ -1,10 +1,13 @@
 import {
   useId,
+  useLayoutEffect,
   useRef,
   useState,
+  type RefObject,
   type ReactNode,
   type CSSProperties,
 } from "react";
+import { useQuery } from "@tanstack/react-query";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import {
@@ -71,12 +74,16 @@ export function Modal({
   onClose,
   wide = false,
   focusBack,
+  discussion = false,
+  headerActions,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
   focusBack?: () => void;
+  discussion?: boolean;
+  headerActions?: ReactNode;
 }) {
   const { root, t, preview } = useBoard();
   const opener = useRef(
@@ -100,6 +107,7 @@ export function Modal({
           className={
             "pb-modal" +
             (wide ? " pb-wide" : "") +
+            (discussion ? " pb-post-modal" : "") +
             (preview ? " pb-embedded" : "")
           }
           onCloseAutoFocus={(event) => {
@@ -111,6 +119,7 @@ export function Modal({
         >
           <header className="pb-modal-header">
             <DialogPrimitive.Title>{title}</DialogPrimitive.Title>
+            {headerActions}
             <DialogPrimitive.Close aria-label={t("close")} className="pb-icon">
               <X size={20} />
             </DialogPrimitive.Close>
@@ -161,6 +170,39 @@ export function Avatar({ guest, size = 26 }: { guest?: Guest; size?: number }) {
     </span>
   );
 }
+export function AuthorBadge({ guest }: { guest?: Guest }) {
+  const { t } = useBoard();
+  if (guest?.staff) return <span className="pb-team">{t("team")}</span>;
+  if (guest?.authenticated)
+    return <span className="pb-team pb-account-badge">{t("signedIn")}</span>;
+  return null;
+}
+export function GuestNameField({
+  value,
+  onChange,
+}: {
+  value?: string;
+  onChange: (name: string) => void;
+}) {
+  const { adapter, t } = useBoard();
+  const guest = useQuery({
+    queryKey: ["guest"],
+    queryFn: () => adapter.guest(),
+  });
+  return (
+    <div className="pb-guest-name">
+      <Avatar guest={guest.data ?? undefined} size={24} />
+      <input
+        autoComplete="nickname"
+        aria-label={t("guestName")}
+        placeholder={t("guestName")}
+        maxLength={40}
+        value={value ?? guest.data?.name ?? ""}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </div>
+  );
+}
 export function Vote({ post }: { post: Post }) {
   const { t, toggleVote, voting, data } = useBoard();
   if (data.board.settings?.board_fields?.votes === false) return null;
@@ -204,18 +246,40 @@ export function PagedList<T extends { id: string }>({
   render,
   label,
   estimate = 100,
+  scrollRef,
 }: {
   items: T[];
   render: (v: T) => ReactNode;
   label: string;
   estimate?: number;
+  scrollRef?: RefObject<HTMLDivElement | null>;
 }) {
   const parent = useRef<HTMLDivElement>(null);
   const [focused, setFocused] = useState(-1);
   const virtual = items.length > 60;
+  const [scrollMargin, setScrollMargin] = useState(0);
+  useLayoutEffect(() => {
+    const viewport = scrollRef?.current;
+    const list = parent.current;
+    if (!virtual || !viewport || !list) return;
+    // Images and text above a thread can change its offset after the panel opens.
+    const measureOffset = () =>
+      setScrollMargin(
+        list.getBoundingClientRect().top -
+          viewport.getBoundingClientRect().top +
+          viewport.scrollTop,
+      );
+    measureOffset();
+    const observer = new ResizeObserver(measureOffset);
+    observer.observe(viewport);
+    if (viewport.firstElementChild)
+      observer.observe(viewport.firstElementChild);
+    return () => observer.disconnect();
+  }, [virtual, scrollRef]);
   const rows = useVirtualizer({
     count: items.length,
-    getScrollElement: () => parent.current,
+    getScrollElement: () => scrollRef?.current ?? parent.current,
+    scrollMargin,
     estimateSize: () => estimate,
     overscan: 4,
     enabled: virtual,
@@ -230,7 +294,7 @@ export function PagedList<T extends { id: string }>({
   return (
     <div
       ref={parent}
-      className="pb-paged pb-scroll-list"
+      className={scrollRef ? "pb-paged" : "pb-paged pb-scroll-list"}
       role="list"
       aria-label={label}
       onBlur={(event) => {
@@ -269,7 +333,7 @@ export function PagedList<T extends { id: string }>({
               ref={rows.measureElement}
               data-index={row.index}
               className="pb-virtual-row"
-              style={{ transform: "translateY(" + row.start + "px)" }}
+              style={{ transform: `translateY(${row.start - scrollMargin}px)` }}
               onFocus={() => setFocused(row.index)}
               role="listitem"
               aria-posinset={row.index + 1}

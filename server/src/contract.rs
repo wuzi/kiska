@@ -6,6 +6,7 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct PostInput {
+    pub guest_name: Option<String>,
     pub title: String,
     #[serde(default)]
     pub body: String,
@@ -38,6 +39,7 @@ pub struct BoardSummary {
 }
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ActorSummary {
+    pub authenticated: bool,
     pub name: String,
     pub avatar_url: Option<String>,
     pub staff: bool,
@@ -88,6 +90,7 @@ pub struct RoadmapColumn {
 }
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct PublicPage {
+    pub authenticated: bool,
     pub board: BoardSummary,
     pub statuses: Vec<Label>,
     pub tags: Vec<Label>,
