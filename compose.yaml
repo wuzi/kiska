@@ -1,0 +1,132 @@
+name: patchboard
+x-storage: &storage
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?configure the private storage access key}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?configure the private storage secret}
+  AWS_REGION: us-east-1
+  AWS_DEFAULT_REGION: us-east-1
+  S3_BUCKET: patchboard-media
+  S3_ENDPOINT: http://storage:8333
+x-env: &env
+  <<: *storage
+  PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?configure the public origin}
+  S3_PUBLIC_ORIGIN: ${PUBLIC_ORIGIN}
+  S3_GRANT_SECONDS: ${S3_GRANT_SECONDS:-300}
+  DATABASE_URL: postgres://patchboard:${POSTGRES_PASSWORD:?configure a URL-safe database password}@db:5432/patchboard
+  SMTP_HOST: ${SMTP_HOST:?configure the SMTP relay}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_FROM: ${SMTP_FROM:?configure the sender}
+  SMTP_USERNAME: ${SMTP_USERNAME:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_TLS: ${SMTP_TLS:-starttls}
+  IP_HASH_KEY: ${IP_HASH_KEY:?configure a stable private abuse-signal key}
+  TRUSTED_PROXY_IPS: ${PROXY_IP:-10.201.91.10}
+  PATCHBOARD_RATE_IDENTITY: ${PATCHBOARD_RATE_IDENTITY:-20}
+  PATCHBOARD_RATE_CREATE_ORG: ${PATCHBOARD_RATE_CREATE_ORG:-20}
+  PATCHBOARD_RATE_CREATE_BOARD: ${PATCHBOARD_RATE_CREATE_BOARD:-60}
+  PATCHBOARD_RATE_REGISTER: ${PATCHBOARD_RATE_REGISTER:-30}
+  PATCHBOARD_RATE_LOGIN: ${PATCHBOARD_RATE_LOGIN:-15}
+  PATCHBOARD_RATE_FORGOT: ${PATCHBOARD_RATE_FORGOT:-30}
+  PATCHBOARD_RATE_POST: ${PATCHBOARD_RATE_POST:-5}
+  PATCHBOARD_RATE_COMMENT: ${PATCHBOARD_RATE_COMMENT:-20}
+  PATCHBOARD_RATE_VOTE: ${PATCHBOARD_RATE_VOTE:-120}
+  PATCHBOARD_RATE_LIKE: ${PATCHBOARD_RATE_LIKE:-120}
+  PATCHBOARD_RATE_UPLOAD: ${PATCHBOARD_RATE_UPLOAD:-60}
+  PATCHBOARD_RATE_SUBSCRIBE: ${PATCHBOARD_RATE_SUBSCRIBE:-20}
+  SUPPORT_URL: ${SUPPORT_URL:-}
+  POLICY_URL: ${POLICY_URL:-}
+x-service: &service
+  image: ${PATCHBOARD_IMAGE:-patchboard-rs:local}
+  build: .
+  environment: *env
+  restart: unless-stopped
+  init: true
+  security_opt: [no-new-privileges:true]
+  stop_grace_period: 40s
+services:
+  db:
+    image: postgres:15.19-bookworm@sha256:19b8449e2187e8a174b40c8832a7ed9da45813b74c2779b1c614e7e7d0ee47f0
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: patchboard
+      POSTGRES_USER: patchboard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: [db-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U patchboard -d patchboard]
+      interval: 5s
+      timeout: 3s
+      retries: 25
+  storage:
+    image: chrislusf/seaweedfs:4.55@sha256:7ca46aeae2f223b37e5d91593c17ab37738eec6df6ab69b48a0487f7643342b9
+    environment: *storage
+    command: ["mini", "-dir=/data", "-ip=storage", "-ip.bind=0.0.0.0", "-admin.ui=false", "-webdav=false", "-master.volumeSizeLimitMB=256"]
+    networks:
+      default: {}
+      edge: {aliases: [storage-edge]}
+    volumes: [storage-data:/data]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, "curl -fsS http://localhost:8333/status >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+  migrate:
+    <<: *service
+    command: [migrate]
+    restart: "no"
+    depends_on:
+      db: {condition: service_healthy}
+  app:
+    <<: *service
+    command: [serve]
+    stop_signal: SIGINT
+    networks:
+      default: {}
+      edge: {aliases: [app-edge]}
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      storage: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, curl, -fsS, http://localhost:8080/readyz]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  worker:
+    <<: *service
+    command: [worker]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      storage: {condition: service_healthy}
+  proxy:
+    image: nginx:1.30.2-alpine@sha256:5f979dcfed4ce6461873f087e8c980d6e29b084b9e8776d9704a7e989b5f4898
+    restart: unless-stopped
+    environment:
+      HTTPS_PROXY_IP: ${HTTPS_PROXY_IP:-10.201.91.1}
+    networks:
+      edge: {ipv4_address: "${PROXY_IP:-10.201.91.10}"}
+    ports: ["127.0.0.1:${HTTP_PORT:-8080}:8080"]
+    volumes: ["./ops/proxy/default.conf.template:/etc/nginx/templates/default.conf.template:ro,z"]
+    depends_on:
+      app: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -qO, /dev/null, http://127.0.0.1:8080/readyz]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  ops:
+    profiles: [tools]
+    build: ops
+    image: ${PATCHBOARD_OPS_IMAGE:-patchboard-rs-ops:local}
+    environment:
+      <<: *storage
+      PGHOST: db
+      PGDATABASE: patchboard
+      PGUSER: patchboard
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+networks:
+  edge:
+    ipam:
+      config: [{subnet: "${PROXY_SUBNET:-10.201.91.0/24}"}]
+volumes:
+  db-data:
+  storage-data:

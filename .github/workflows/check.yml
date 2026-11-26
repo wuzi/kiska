@@ -1,0 +1,28 @@
+name: Check
+on: [push, pull_request]
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        ports: [5432:5432]
+        env:
+          POSTGRES_PASSWORD: local-test
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    env:
+      PATCHBOARD_TEST_DATABASE_URL: postgres://postgres:local-test@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy,rustfmt
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      - run: make test
+      - run: npm --prefix web run build

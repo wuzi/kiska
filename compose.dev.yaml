@@ -1,0 +1,15 @@
+services:
+  app:
+    environment: &devmail
+      SMTP_HOST: inbox
+      SMTP_PORT: "1025"
+      SMTP_FROM: PatchBoard <patchboard@example.test>
+      SMTP_TLS: none
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+  worker:
+    environment: *devmail
+  inbox:
+    image: axllent/mailpit:v1.34.0@sha256:23a2ef85bc50853ab3093645d1d64679afd8887e89da5e48a88940c172591a4e
+    ports: ["127.0.0.1:${INBOX_PORT:-8025}:8025"]
+    restart: unless-stopped

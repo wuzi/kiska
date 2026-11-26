@@ -1,0 +1,4885 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "utoipa-axum",
+    "description": "Utoipa's axum bindings for seamless integration for the two",
+    "contact": {
+      "name": "Juha Kukkonen",
+      "email": "juha7kukkonen@gmail.com"
+    },
+    "license": {
+      "name": "MIT OR Apache-2.0",
+      "identifier": "MIT OR Apache-2.0"
+    },
+    "version": "0.2.0"
+  },
+  "paths": {
+    "/api/v1/b/{org}/{board}": {
+      "get": {
+        "operationId": "public_board",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/b/{org}/{board}/posts": {
+      "post": {
+        "operationId": "submit",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostCreated"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password",
+                  "name"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/forgot": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/reset": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "token",
+                  "password"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify-notification": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/invite": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/recover-account": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentAccount"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentAccount"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "notification_email": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "close_organization_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "slug": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationHome"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/boards": {
+      "post": {
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "slug": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "folder_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "title"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/folders": {
+      "post": {
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/folders/{folder_id}": {
+      "patch": {
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "folder_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "folder_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/invitations": {
+      "post": {
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email",
+                  "role"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/members/{member_id}": {
+      "patch": {
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "member_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "member_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/transfer": {
+      "post": {
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "user_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/close": {
+      "post": {
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/restore": {
+      "post": {
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardDraft"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/publish": {
+      "post": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/close": {
+      "post": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/restore": {
+      "post": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/pin": {
+      "put": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/position": {
+      "patch": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/posts": {
+      "get": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostCreated"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/updates": {
+      "get": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/posts/{post_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostDetail"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/posts/{post_id}/votes": {
+      "get": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/posts/{post_id}/comments": {
+      "post": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/moderate": {
+      "post": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/updates/{update_id}": {
+      "patch": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "update_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInput"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "update_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "revision"
+                ],
+                "properties": {
+                  "revision": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/b/{org}/{board}/suggestions": {
+      "get": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/b/{org}/{board}/updates": {
+      "get": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/b/{org}/{board}/posts/{post_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostDetail"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostInput"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/b/{org}/{board}/posts/{post_id}/vote": {
+      "put": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/b/{org}/{board}/posts/{post_id}/comments": {
+      "post": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/b/{org}/{board}/comments/{comment_id}": {
+      "patch": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentInput"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/b/{org}/{board}/comments/{comment_id}/like": {
+      "put": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/b/{org}/{board}/guest": {
+      "get": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/b/{org}/{board}/guest/recovery": {
+      "post": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "token",
+                    "url"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/b/{org}/{board}/guest/recover": {
+      "post": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/b/{org}/{board}/subscribe": {
+      "post": {
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "locale": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email",
+                  "locale"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operator": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operator/actions": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/boards/{board_id}/media": {
+      "post": {
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "post",
+                "logo",
+                "cover"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadedMedia"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "image/png": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/jpeg": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/webp": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/{id}": {
+      "delete": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Removed"
+          }
+        }
+      },
+      "get": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized private image",
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "307": {
+            "description": "Time-limited published image URL"
+          },
+          "404": {
+            "description": "Unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Account": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "display_name",
+          "email",
+          "verified",
+          "operator",
+          "org_limit"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notification_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "operator": {
+            "type": "boolean"
+          },
+          "org_limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pending_notification_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ActorSummary": {
+        "type": "object",
+        "required": [
+          "name",
+          "staff"
+        ],
+        "properties": {
+          "avatar_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "staff": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BoardDraft": {
+        "type": "object",
+        "required": [
+          "revision",
+          "title",
+          "description",
+          "slug",
+          "settings",
+          "appearance"
+        ],
+        "properties": {
+          "appearance": {
+            "$ref": "#/components/schemas/Value"
+          },
+          "cover_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "logo_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "reassignments": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/Value"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "statuses": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/Label"
+            }
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/Label"
+            }
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "BoardSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "org_id",
+          "org_slug",
+          "slug",
+          "title",
+          "description",
+          "published",
+          "settings",
+          "appearance",
+          "revision"
+        ],
+        "properties": {
+          "appearance": {
+            "$ref": "#/components/schemas/Value"
+          },
+          "cover_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "logo_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "org_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "org_slug": {
+            "type": "string"
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/Value"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "required": [
+          "revision",
+          "id",
+          "body",
+          "body_html",
+          "created_at",
+          "can_edit",
+          "hidden",
+          "liked",
+          "likes"
+        ],
+        "properties": {
+          "author": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActorSummary"
+              }
+            ]
+          },
+          "body": {
+            "type": "string"
+          },
+          "body_html": {
+            "type": "string"
+          },
+          "can_edit": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "liked": {
+            "type": "boolean"
+          },
+          "likes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CommentInput": {
+        "type": "object",
+        "required": [
+          "body"
+        ],
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "CurrentAccount": {
+        "type": "object",
+        "required": [
+          "organizations",
+          "operator"
+        ],
+        "properties": {
+          "operator": {
+            "type": "boolean"
+          },
+          "organizations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Organization"
+            }
+          },
+          "owned_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "owned_limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "user": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Account"
+              }
+            ]
+          }
+        }
+      },
+      "Label": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "color",
+          "position"
+        ],
+        "properties": {
+          "color": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_default": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "on_roadmap": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "preset": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "visitor_allowed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "ModerationInput": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "comment_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "guest_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "ip_ban": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "media_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "post_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "scope": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "target_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "update": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UpdateInput"
+              }
+            ]
+          }
+        }
+      },
+      "Organization": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "owner_id",
+          "board_limit",
+          "seat_limit",
+          "media_limit",
+          "suspended"
+        ],
+        "properties": {
+          "board_limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "closed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "media_limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "seat_limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "suspended": {
+            "type": "boolean"
+          }
+        }
+      },
+      "OrganizationHome": {
+        "type": "object",
+        "required": [
+          "organization",
+          "boards",
+          "members",
+          "folders",
+          "usage"
+        ],
+        "properties": {
+          "boards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardSummary"
+            }
+          },
+          "folders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Value"
+            }
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Value"
+            }
+          },
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
+          }
+        }
+      },
+      "PostCreated": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "slug",
+          "visibility"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          }
+        }
+      },
+      "PostDetail": {
+        "type": "object",
+        "required": [
+          "post",
+          "comments"
+        ],
+        "properties": {
+          "comments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Comment"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "post": {
+            "$ref": "#/components/schemas/PostSummary"
+          }
+        }
+      },
+      "PostInput": {
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "media_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "status_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "tag_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "PostSummary": {
+        "type": "object",
+        "required": [
+          "revision",
+          "id",
+          "title",
+          "slug",
+          "body",
+          "excerpt",
+          "status_id",
+          "pinned",
+          "locked",
+          "visibility",
+          "votes",
+          "voted",
+          "weekly_votes",
+          "voters",
+          "author",
+          "comment_count",
+          "can_edit",
+          "created_at",
+          "team_response"
+        ],
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/ActorSummary"
+          },
+          "body": {
+            "type": "string"
+          },
+          "can_edit": {
+            "type": "boolean"
+          },
+          "comment_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "excerpt": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "pinned": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tag_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "team_response": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "voted": {
+            "type": "boolean"
+          },
+          "voters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Value"
+            }
+          },
+          "votes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "weekly_votes": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PublicPage": {
+        "type": "object",
+        "required": [
+          "board",
+          "statuses",
+          "tags",
+          "posts",
+          "columns",
+          "total",
+          "locale",
+          "updates"
+        ],
+        "properties": {
+          "board": {
+            "$ref": "#/components/schemas/BoardSummary"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoadmapColumn"
+            }
+          },
+          "locale": {
+            "type": "string"
+          },
+          "next_cursor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "posts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostSummary"
+            }
+          },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Label"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Label"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Value"
+            }
+          },
+          "updates_next_cursor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "RoadmapColumn": {
+        "type": "object",
+        "required": [
+          "status_id",
+          "posts",
+          "total"
+        ],
+        "properties": {
+          "next_cursor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "posts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostSummary"
+            }
+          },
+          "status_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "UpdateInput": {
+        "type": "object",
+        "required": [
+          "title",
+          "body",
+          "operation_id"
+        ],
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "post_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "UploadedMedia": {
+        "type": "object",
+        "required": [
+          "id",
+          "url",
+          "bytes"
+        ],
+        "properties": {
+          "bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "Usage": {
+        "type": "object",
+        "required": [
+          "board_count",
+          "board_limit",
+          "seat_count",
+          "seat_limit",
+          "media_bytes",
+          "media_limit"
+        ],
+        "properties": {
+          "board_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "board_limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "media_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "media_limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "seat_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "seat_limit": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "Value": {}
+    }
+  }
+}

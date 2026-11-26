@@ -1,0 +1,72 @@
+.pb-editor {
+  border: 1px solid var(--pb-line);
+  border-radius: var(--pb-input-radius);
+  background: #fff;
+  overflow: hidden;
+}
+.pb-editor:focus-within {
+  outline: 2px solid var(--pb-accent);
+  outline-offset: 1px;
+}
+.pb-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--pb-line);
+  background: #fafbf9;
+}
+.pb-tools button,
+.pb-link-input button {
+  height: 29px;
+  min-width: 29px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #526359;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.pb-tools button[aria-pressed="true"],
+.pb-tools button:hover {
+  color: var(--pb-accent);
+  background: #e7efe8;
+}
+.pb-editor-content {
+  padding: 12px 15px;
+  min-height: 105px;
+  outline: none;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.pb-editor-content > * {
+  margin: 0 0 0.4em;
+}
+.pb-editor-content > *:last-child {
+  margin-bottom: 0;
+}
+.pb-editor-content ul,
+.pb-editor-content ol {
+  padding-left: 1.5em;
+}
+.pb-editor-content table {
+  border-collapse: collapse;
+}
+.pb-editor-content td,
+.pb-editor-content th {
+  min-width: 40px;
+  border: 1px solid var(--pb-line);
+  padding: 4px;
+}
+.pb-link-input {
+  display: flex;
+  gap: 5px;
+  padding: 6px;
+}
+.pb-link-input input {
+  flex: 1;
+}
+.pb-editor-content pre {
+  white-space: pre-wrap;
+}
