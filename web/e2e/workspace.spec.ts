@@ -1,3 +1,4 @@
+import { profileComponent } from "./render-profile";
 import { expect, test } from "@playwright/test";
 test.use({ actionTimeout: 8000 });
 
@@ -106,6 +107,7 @@ test("@account @editor @moderate @updates workspace creator publishes a board an
     .getByRole("dialog")
     .getByRole("button", { name: "Create organization" })
     .click();
+  const checkCanvas = await profileComponent(page, '"ws-canvas"');
   await page.getByRole("button", { name: "Create board", exact: true }).click();
   await page.getByLabel("Board title").fill(name);
   await page
@@ -116,9 +118,10 @@ test("@account @editor @moderate @updates workspace creator publishes a board an
   const id = new URL(page.url()).pathname.split("/").at(-1),
     board = "/api/v1/boards/" + id;
   await page.getByRole("button", { name: "Edit details" }).click();
-  await page
-    .getByLabel("Description", { exact: true })
-    .fill("Tell us what to build next.");
+  const description = page.getByLabel("Description", { exact: true });
+  await checkCanvas(() =>
+    description.pressSequentially("Tell us what to build next."),
+  );
   await page.getByRole("button", { name: "Close panel" }).click();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page

@@ -1,6 +1,6 @@
 # PatchBoard launch specification
 
-**Status** — Launch scope approved in Q30. This document and the [build plan](superpowers/plans/2026-11-26-patchboard-launch.md) are the deliverables for review before implementation.
+**Status** — Launch scope approved in Q30 and implemented. [Build plan](superpowers/plans/2026-11-26-patchboard-launch.md) · [Launch verification](launch-verification.md)
 
 A community organizer can sign up for free, invite teammates, customize a feedback board, try it at phone size, and publish a link. A player following that link from Discord can immediately read a suggestion, vote, propose an improvement, or join the conversation. The release starts with fresh data. Each organization can run several boards on the same installation.
 

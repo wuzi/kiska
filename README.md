@@ -4,6 +4,8 @@
 
 PatchBoard hosts feedback boards, roadmaps and community updates. One installation supports multiple organizations. The Rust service serves the API, initial public HTML and built React applications. PostgreSQL stores accounts, board content, sessions, jobs and media references. Private SeaweedFS stores processed images.
 
+[Launch specification](docs/spec.md) · [Performance results and release verification](docs/launch-verification.md)
+
 ## Run locally with email
 
 Install Docker Engine with Compose v2 or newer. From the repository root, generate a local environment once.

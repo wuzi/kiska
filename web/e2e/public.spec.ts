@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
+import { profileComponent } from "./render-profile";
 
 const path = process.env.PATCHBOARD_E2E_BOARD || "/b/atlas-lab/community";
 test.beforeEach(async ({ page }) => {
@@ -307,4 +308,16 @@ test("@updates loads older announcements independently of feedback pagination", 
   await response;
   await expect(updates).toHaveCount(35);
   await expect(page.getByRole("button", { name: "Load more" })).toHaveCount(0);
+});
+
+test("@performance typing a comment does not rerender board cards", async ({
+  page,
+}) => {
+  const check = await profileComponent(page, '"pb-road-card"');
+  await page.reload();
+  await page.locator(".pb-card a").first().click();
+  await page.getByRole("button", { name: "Write a comment…" }).click();
+  const editor = page.getByRole("textbox", { name: "Write a comment" });
+  await editor.click();
+  await check(() => editor.pressSequentially("Please add this feature."));
 });

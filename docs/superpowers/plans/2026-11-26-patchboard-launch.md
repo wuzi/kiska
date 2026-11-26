@@ -1,6 +1,6 @@
 # PatchBoard implementation plan
 
-> **For implementers** — Read the [launch specification](../../spec.md) first. This is a plan for review. After approval to build, use the team's chosen execution workflow (Superpowers Executing Plans or Subagent-Driven Development) and track the checkboxes task by task.
+> **Approved launch plan** — The checklist below records the original build and test proposals. The [launch verification](../../launch-verification.md) records the implementation and executed release checks. [Launch specification](../../spec.md)
 
 **Goal** — Deliver a free multi-organization, multi-board feedback service that a VPS operator can deploy and restore, and that players and creators can use within the agreed interaction budgets.
 
@@ -215,4 +215,4 @@ The task order is a viable single-engineer sequence. Each task names the files t
 | Q18–Q20 — PostgreSQL, default self-hosted S3, five-minute grants | Real storage and visibility (8), Compose startup, proxy and restore drill (16). |
 | Q30 — typed client, complete local release surface | Generated contract (1), drift check and final acceptance (17). |
 
-**Review handoff** — Review the recommended defaults, the role boundaries, and the benchmark profiles alongside the specification. Implementation begins after review.
+The [release checks](../../launch-verification.md) include measured outcomes for both profiles and the verified deployment and recovery procedures.
